@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     int port;
     String nickname;
     private Socket socket;
-    String serverIP = "192.168.123.101";
+    String serverIP = "49.50.162.149";
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
@@ -122,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
                     socket_in.read(buf,0,4);
                     int[] temp_buf = getIntArrayFromByteArray(buf,1);
                     user_number = temp_buf[0];
+                    write_to_server(nickname);
 
                     while(socket.isConnected()) {
                         socket_in.read(buf, 0, 4);
