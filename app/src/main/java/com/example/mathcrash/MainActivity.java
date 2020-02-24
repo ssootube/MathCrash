@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Xml;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,13 +33,26 @@ public class MainActivity extends AppCompatActivity {
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
+    TextView question, info;
+    Button submit;
+    EditText answer;
 
+    boolean check = false;
 
+    String s = "";
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
-    public void do_this_when_quiz_arrived(){
 
+    public void do_this_when_quiz_arrived(){
+        for(int i=0; i<q_size-1;i++){
+            s+= String.valueOf(quiz[i]) +" ";
+            question.setText(s);
+        }
+        s="";
+
+        is_quiz_arrived = false;
     }
+
     boolean is_quiz_arrived = false; //quiz,q_size,quiz_time은 세트로 동시에 도착함.
     int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
     int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
@@ -122,6 +138,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         nickname = getIntent().getExtras().getString("nickname");//LoginActivity에서 받아온 닉네임 정보를 저장한다.
         port = Integer.valueOf(getIntent().getExtras().getString("port"));//LoginActivity에서 받아온 포트번호 정보를 저장한다.
+
+        question = (TextView)findViewById(R.id.question);
+        submit = (Button)findViewById(R.id.submit);
+        answer = (EditText)findViewById(R.id.answer);
+        info = (TextView)findViewById(R.id.info);
+
+        info.setText(nickname +"님의 COIN "+"개");
 
         Thread worker = new Thread() {
             synchronized public void run() {
@@ -212,5 +235,44 @@ public class MainActivity extends AppCompatActivity {
         worker.start();
 
 
+
+        submit.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view){
+
+                String ans = String.valueOf(answer.getText());
+                boolean checkDigit = true;
+
+                if(ans.charAt(0) == '-'){
+                    for(int i=1; i<ans.length();i++){
+                        if(!Character.isDigit(ans.charAt(i))){
+                            checkDigit = false;
+                            break;
+                        }
+                    }
+                }else{
+                    for(int i=0; i<ans.length();i++){
+                        if(!Character.isDigit(ans.charAt(i))){
+                            checkDigit = false;
+                            break;
+                        }
+                    }
+                }
+
+                if(checkDigit){
+                    if(Integer.parseInt(ans) == quiz[q_size-1]){
+                        Toast.makeText(getApplicationContext(),"정답입니다", Toast.LENGTH_LONG).show();
+                        //answer_to_server(true);
+                    }else{
+                        Toast.makeText(getApplicationContext(),"틀렸습니다", Toast.LENGTH_LONG).show();
+                       // answer_to_server(false);
+                    }
+                }else{
+                    Toast.makeText(getApplicationContext(),"숫자만 입력해주세요", Toast.LENGTH_LONG).show();
+                }
+                answer.setText("");
+
+            }
+        });
     }
 }

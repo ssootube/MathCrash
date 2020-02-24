@@ -15,13 +15,24 @@
             android:id="@+id/textView1"
             android:layout_width="match_parent"
             android:layout_height="57dp"
-            android:textFontWeight="20"
+            android:textSize="18dp"
+            android:gravity="center"
             android:text="수열 추리 문제" />
+
+        <TextView
+            android:id="@+id/info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="right"
+            android:textSize="15dp"
+            android:text="" />
 
         <TextView
             android:id="@+id/question"
             android:layout_width="match_parent"
             android:layout_height="88dp"
+            android:textSize="35dp"
+            android:layout_marginLeft="10dp"
             android:text="" />
 
         <EditText
@@ -34,7 +45,7 @@
             android:text="" />
 
         <Button
-            android:id="@+id/button2"
+            android:id="@+id/submit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="전송" />
