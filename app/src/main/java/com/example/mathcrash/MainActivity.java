@@ -32,13 +32,18 @@ public class MainActivity extends AppCompatActivity {
 
 
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
+
+    boolean is_quiz_arrived = false; //quiz,q_size,quiz_time은 세트로 동시에 도착함.
     int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
     int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
     int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
 
+    boolean is_coin_arrived = false;//coin, coin_size는 동시에 도착함
     int[] coin;//현재 접속중인 유저들의 코인 현황. 예를 들어 coin[2]에는 2번 유저의 코인 값이 저장되어 있다. 단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
     //coin배열의 값을 수정해도 서버에서 처리되는 것이기에 코인을 증가시킬 수 없다. 물론 잠깐은 증가된 것처럼 보일 수 있겠지만, 서버에서 데이터를 받아와서 업데이트 시키면 무효.
     int coin_size = 0;//coin 배열의 길이
+
+    boolean is_user_number_arrived = false;
     int user_number = -1; // 자신의 유저번호. 즉, 자신의 코인 값은 coin[user_number]로 볼 수 있다.
     public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
         if(correct_or_not){
@@ -122,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
                     socket_in.read(buf,0,4);
                     int[] temp_buf = getIntArrayFromByteArray(buf,1);
                     user_number = temp_buf[0];
+                    is_user_number_arrived = true;
                     write_to_server(nickname);
 
                     while(socket.isConnected()) {
@@ -139,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
                                 socket_in.read(buf, 0, 4);
                                 temp = getIntArrayFromByteArray(buf, 1);
                                 quiz_time = temp[0];
+                                is_quiz_arrived = true;
                                 break;
                             case 1:
                                 //서버로 부터 coin정보 데이터가 도착한 경우
@@ -147,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
                                 coin_size = temp[0];
                                 socket_in.read(buf, 0, 4 * coin_size);
                                 coin = getIntArrayFromByteArray(buf, q_size);
+                                is_coin_arrived = true;
                                 break;
                             case 2:
                                 break;
@@ -192,7 +200,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         worker.start();
-
 
     }
 }
