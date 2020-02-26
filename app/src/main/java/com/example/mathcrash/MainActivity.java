@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
 
-    public void do_this_when_quiz_arrived(){
+    public synchronized void do_this_when_quiz_arrived(){
         for(int i=0; i<q_size-1;i++){
             s+= String.valueOf(quiz[i]) +" ";
             question.setText(s);
@@ -57,10 +57,8 @@ public class MainActivity extends AppCompatActivity {
     int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
     int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
     int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
-
-
-    public void do_this_when_coin_arrived(){
-
+    public synchronized void do_this_when_coin_arrived(){
+        //네트워크 쪽에서 값을 받아오는 스레드와, 이 함수를 실행시키는 스레드를 분리시켜 놓았으므로, 꼭 is_coin_arrived 변수를 잘 관리해야한다. 제 때 false로 잘 바꿔야 함. is_quiz_arrived도 마찬가지.
     }
     boolean is_coin_arrived = false;//coin, coin_size는 동시에 도착함
     int[] coin;//현재 접속중인 유저들의 코인 현황. 예를 들어 coin[2]에는 2번 유저의 코인 값이 저장되어 있다. 단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
@@ -79,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
             write_to_server(1);
         }
     }
+
     ///////////////////////
 
     public static int byteArrayToInt(byte[] b) {
@@ -112,6 +111,9 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
+    public void send_signal(int singal){//서버에 시그널을 보낸다.
+        write_to_server(singal);
+    }
     public void write_to_server(int num){//서버에 정수를 보내는 함수
         try {
             byte[] temp1 = intToByteArray(num);
@@ -125,7 +127,10 @@ public class MainActivity extends AppCompatActivity {
     }
     public void write_to_server(String data){//서버에 문자열을 보내는 함수
         try {
-            socket_out.write(data.getBytes("UTF-8"));
+            byte[] temp = data.getBytes("UTF-8");
+            send_signal(2);
+            write_to_server(temp.length);
+            socket_out.write(temp,0,temp.length);
             socket_out.flush();
         } catch (IOException e) {
             e.printStackTrace();
@@ -147,19 +152,26 @@ public class MainActivity extends AppCompatActivity {
         info.setText(nickname +"님의 COIN "+"개");
 
         Thread worker = new Thread() {
-            synchronized public void run() {
+             public void run() {
                 try{
+
                     socket  = new Socket(); // 소켓 생성
                     SocketAddress serverAddress = new InetSocketAddress(serverIP, port);//주소 등록
                     socket.connect(serverAddress, 3000); // 연결시도
                     socket_out = new BufferedOutputStream(socket.getOutputStream());
                     socket_in = new BufferedInputStream(socket.getInputStream());
                     buf= new byte[50];
+
+                    //서버에 닉네임을 전송합니다.
+                    write_to_server(nickname);
+
+                    //유저번호를 받아옵니다.
                     socket_in.read(buf,0,4);
                     int[] temp_buf = getIntArrayFromByteArray(buf,1);
                     user_number = temp_buf[0];
                     is_user_number_arrived = true;
-                    write_to_server(nickname);
+
+
 
                     while(socket.isConnected()) {
                         socket_in.read(buf, 0, 4);
@@ -177,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                                 temp = getIntArrayFromByteArray(buf, 1);
                                 quiz_time = temp[0];
                                 is_quiz_arrived = true;
-                                do_this_when_quiz_arrived();
+                               // do_this_when_quiz_arrived();
                                 break;
                             case 1:
                                 //서버로 부터 coin정보 데이터가 도착한 경우
@@ -185,9 +197,9 @@ public class MainActivity extends AppCompatActivity {
                                 temp = getIntArrayFromByteArray(buf, 1);
                                 coin_size = temp[0];
                                 socket_in.read(buf, 0, 4 * coin_size);
-                                coin = getIntArrayFromByteArray(buf, q_size);
+                                coin = getIntArrayFromByteArray(buf, coin_size);
                                 is_coin_arrived = true;
-                                do_this_when_coin_arrived();
+                                //do_this_when_coin_arrived();
                                 break;
                             case 2:
                                 break;
@@ -234,6 +246,15 @@ public class MainActivity extends AppCompatActivity {
         };
         worker.start();
 
+        Thread gamePlay = new Thread() {
+            public void run() {
+                while(true) {
+                    if (is_coin_arrived) do_this_when_coin_arrived();
+                    if (is_quiz_arrived) do_this_when_quiz_arrived();
+                }
+            }
+            };
+        gamePlay.start();
 
 
         submit.setOnClickListener(new View.OnClickListener(){
