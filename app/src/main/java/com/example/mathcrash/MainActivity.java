@@ -11,6 +11,7 @@ import android.util.Xml;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,18 +27,25 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
-    int port, mytime;
+    int port, mytime, user;
     String nickname;
     private Socket socket;
     String serverIP = "49.50.162.149";
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
-    TextView question, info, time, ccu;
+    TextView question, info, ccu, rank1;
     Button submit, exit;
     EditText answer;
+    ProgressBar timer;
 
     String s = "";
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
@@ -48,7 +56,27 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                String ranking ="";
+                //List<int[]> rank = new ArrayList<>(Arrays.asList(coin));
+                List<Integer> rank = new ArrayList<>();
+
+                for(int i=0; i<coin_size;i++){
+                    rank.add(new Integer(coin[i]));
+                }
+
+                Collections.reverse(rank);
+                if(user>=5){
+                    for(int i=1; i<=5;i++){
+                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                    }
+                }else{
+                    for(int i=1; i<=user;i++){
+                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                    }
+                }
                 answer.setEnabled(true);
+                answer.setHint("정답을 입력하세요");
+                rank1.setText(ranking);
             }
         });
         for(int i=0; i<q_size-1;i++){
@@ -156,9 +184,10 @@ public class MainActivity extends AppCompatActivity {
         submit = (Button)findViewById(R.id.submit);
         answer = (EditText)findViewById(R.id.answer);
         info = (TextView)findViewById(R.id.info);
-        time = (TextView)findViewById(R.id.time);
         exit = (Button)findViewById(R.id.exit);
         ccu = (TextView)findViewById(R.id.ccu);
+        rank1 = (TextView)findViewById(R.id.rank1);
+        timer = (ProgressBar)findViewById(R.id.timer);
 
         Thread worker = new Thread() {
              public void run() {
@@ -290,8 +319,16 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            time.setText(String.valueOf(mytime));
-                            ccu.setText(String.valueOf(coin_size-4) +"명 접속 중입니다");
+                            user=0;
+                            timer.setProgress(mytime);
+
+                            for(int i=0; i<coin_size; i++){
+                                if(coin[i]!=0) user++;
+                            }
+                            ccu.setText(String.valueOf(user) +"명 접속 중입니다");
+
+
+
                         }
                     });
 
@@ -335,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
                             };
                         correct.start();
                         answer.setEnabled(false);
+                        answer.setHint("");
                     }else{
                         Toast.makeText(getApplicationContext(),"틀렸습니다", Toast.LENGTH_LONG).show();
                         Thread fail = new Thread() {
