@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.util.Xml;
 import android.view.View;
@@ -26,30 +28,34 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 
 public class MainActivity extends AppCompatActivity {
-    int port;
+    int port, mytime;
     String nickname;
     private Socket socket;
     String serverIP = "49.50.162.149";
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
-    TextView question, info;
-    Button submit;
+    TextView question, info, time;
+    Button submit, exit;
     EditText answer;
-
-    boolean check = false;
 
     String s = "";
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
-
     public synchronized void do_this_when_quiz_arrived(){
+        mytime = quiz_time;
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                answer.setEnabled(true);
+            }
+        });
         for(int i=0; i<q_size-1;i++){
             s+= String.valueOf(quiz[i]) +" ";
             question.setText(s);
         }
         s="";
-
         is_quiz_arrived = false;
     }
 
@@ -58,6 +64,10 @@ public class MainActivity extends AppCompatActivity {
     int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
     int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
     public synchronized void do_this_when_coin_arrived(){
+
+        info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
+        is_coin_arrived = false;
+
         //네트워크 쪽에서 값을 받아오는 스레드와, 이 함수를 실행시키는 스레드를 분리시켜 놓았으므로, 꼭 is_coin_arrived 변수를 잘 관리해야한다. 제 때 false로 잘 바꿔야 함. is_quiz_arrived도 마찬가지.
     }
     boolean is_coin_arrived = false;//coin, coin_size는 동시에 도착함
@@ -77,8 +87,6 @@ public class MainActivity extends AppCompatActivity {
             write_to_server(1);
         }
     }
-
-    ///////////////////////
 
     public static int byteArrayToInt(byte[] b) {
         if (b.length == 4)
@@ -148,13 +156,12 @@ public class MainActivity extends AppCompatActivity {
         submit = (Button)findViewById(R.id.submit);
         answer = (EditText)findViewById(R.id.answer);
         info = (TextView)findViewById(R.id.info);
-
-        info.setText(nickname +"님의 COIN "+"개");
+        time = (TextView)findViewById(R.id.time);
+        exit = (Button)findViewById(R.id.exit);
 
         Thread worker = new Thread() {
              public void run() {
                 try{
-
                     socket  = new Socket(); // 소켓 생성
                     SocketAddress serverAddress = new InetSocketAddress(serverIP, port);//주소 등록
                     socket.connect(serverAddress, 3000); // 연결시도
@@ -170,8 +177,6 @@ public class MainActivity extends AppCompatActivity {
                     int[] temp_buf = getIntArrayFromByteArray(buf,1);
                     user_number = temp_buf[0];
                     is_user_number_arrived = true;
-
-
 
                     while(socket.isConnected()) {
                         socket_in.read(buf, 0, 4);
@@ -204,6 +209,27 @@ public class MainActivity extends AppCompatActivity {
                             case 2:
                                 break;
                         }
+
+                        exit.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                try {
+                                    socket.close();
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                                            startActivity(intent);
+                                            finish();
+                                        }
+                                    });
+
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+
                     }
                     MainActivity.this.runOnUiThread(new Runnable() {
                         public void run() {
@@ -246,11 +272,27 @@ public class MainActivity extends AppCompatActivity {
         };
         worker.start();
 
+
         Thread gamePlay = new Thread() {
             public void run() {
                 while(true) {
-                    if (is_coin_arrived) do_this_when_coin_arrived();
-                    if (is_quiz_arrived) do_this_when_quiz_arrived();
+                    mytime++;
+                    try{
+                        if (is_coin_arrived) do_this_when_coin_arrived();
+                        if (is_quiz_arrived) do_this_when_quiz_arrived();
+
+                        Thread.sleep(1000);
+                    }catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            time.setText(String.valueOf(mytime));
+                        }
+                    });
+
                 }
             }
             };
@@ -281,12 +323,24 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if(checkDigit){
+
                     if(Integer.parseInt(ans) == quiz[q_size-1]){
                         Toast.makeText(getApplicationContext(),"정답입니다", Toast.LENGTH_LONG).show();
-                        //answer_to_server(true);
+                        Thread correct = new Thread() {
+                            public void run() {
+                                answer_to_server(true);
+                              }
+                            };
+                        correct.start();
+                        answer.setEnabled(false);
                     }else{
                         Toast.makeText(getApplicationContext(),"틀렸습니다", Toast.LENGTH_LONG).show();
-                       // answer_to_server(false);
+                        Thread fail = new Thread() {
+                            public void run() {
+                                answer_to_server(false);
+                            }
+                        };
+                        fail.start();
                     }
                 }else{
                     Toast.makeText(getApplicationContext(),"숫자만 입력해주세요", Toast.LENGTH_LONG).show();
@@ -295,5 +349,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+
     }
 }

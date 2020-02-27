@@ -49,5 +49,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="전송" />
+
+        <TextView
+            android:id="@+id/time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
+
+        <Button
+            android:id="@+id/exit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="종료" />
     </LinearLayout>
 </LinearLayout>
