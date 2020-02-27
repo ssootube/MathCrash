@@ -291,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             time.setText(String.valueOf(mytime));
-                            ccu.setText(String.valueOf(coin_size-3) +"명 접속 중입니다");
+                            ccu.setText(String.valueOf(coin_size-4) +"명 접속 중입니다");
                         }
                     });
 
