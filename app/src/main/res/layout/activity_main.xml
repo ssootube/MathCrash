@@ -61,5 +61,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="종료" />
+
+        <TextView
+            android:id="@+id/ccu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="" />
     </LinearLayout>
 </LinearLayout>

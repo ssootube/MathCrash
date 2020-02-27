@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
-    TextView question, info, time;
+    TextView question, info, time, ccu;
     Button submit, exit;
     EditText answer;
 
@@ -158,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
         info = (TextView)findViewById(R.id.info);
         time = (TextView)findViewById(R.id.time);
         exit = (Button)findViewById(R.id.exit);
+        ccu = (TextView)findViewById(R.id.ccu);
 
         Thread worker = new Thread() {
              public void run() {
@@ -290,6 +291,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             time.setText(String.valueOf(mytime));
+                            ccu.setText(String.valueOf(coin_size-3) +"명 접속 중입니다");
                         }
                     });
 
