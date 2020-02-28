@@ -222,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public synchronized void buy_item(int item_code, int user_number){
+        //이 함수 내부는 수정하지 말고, 함수 자체를 이용만 해주세요.
         //당연히 서버로 구매 신호를 보내는 거기 때문에, 이 함수는 메인 스레드에서 실행하면 안된다.
         //코인이 부족하거나, 이미 접속이 끊어진 유저에게 공격을 보낸다던가 하는 경우에는 아무런 동작도 하지 않는다. 오류는 안나니 걱정 하지 마세요. 그냥 아무런 동작도 안함.
 
@@ -354,6 +355,7 @@ public class MainActivity extends AppCompatActivity {
                                 socket_in.read(buf, 0, 4);
                                 temp = getIntArrayFromByteArray(buf, 1);
                                 my_shield = temp[0];
+                                is_my_shield_arrived = true;
                                 break;
                         }
 
@@ -420,6 +422,7 @@ public class MainActivity extends AppCompatActivity {
         worker.start();
 
 
+
         Thread gamePlay = new Thread() {
             public void run() {
                 while(true) {
@@ -430,11 +433,12 @@ public class MainActivity extends AppCompatActivity {
                         if (is_nickname_arrived) do_this_when_nicknames_arrived();
                         if (is_my_shield_arrived) do_this_when_my_shield_arrived();
 
-                        Thread.sleep(1000);
+                        Thread.sleep(1000);//게임 플레이 내부에 시간 지연은 삭제해주세요.
                     }catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 
+                    //이 아래 부분은 어차피 메인스레드(UIThread)에서 실행하는 거라면, gameplay스레드 외부에다가 배치해도 될 거 같습니다.
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
