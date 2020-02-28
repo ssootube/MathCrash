@@ -48,73 +48,6 @@ public class MainActivity extends AppCompatActivity {
     ProgressBar timer;
 
     String s = "";
-    //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
-
-    public synchronized void do_this_when_quiz_arrived(){
-        mytime = quiz_time;
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                String ranking ="";
-                //List<int[]> rank = new ArrayList<>(Arrays.asList(coin));
-                List<Integer> rank = new ArrayList<>();
-
-                for(int i=0; i<coin_size;i++){
-                    rank.add(new Integer(coin[i]));
-                }
-
-                Collections.reverse(rank);
-                if(user>=5){
-                    for(int i=1; i<=5;i++){
-                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
-                    }
-                }else{
-                    for(int i=1; i<=user;i++){
-                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
-                    }
-                }
-                answer.setEnabled(true);
-                answer.setHint("정답을 입력하세요");
-                rank1.setText(ranking);
-            }
-        });
-        for(int i=0; i<q_size-1;i++){
-            s+= String.valueOf(quiz[i]) +" ";
-            question.setText(s);
-        }
-        s="";
-        is_quiz_arrived = false;
-    }
-
-    boolean is_quiz_arrived = false; //quiz,q_size,quiz_time은 세트로 동시에 도착함.
-    int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
-    int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
-    int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
-    public synchronized void do_this_when_coin_arrived(){
-
-        info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
-        is_coin_arrived = false;
-
-        //네트워크 쪽에서 값을 받아오는 스레드와, 이 함수를 실행시키는 스레드를 분리시켜 놓았으므로, 꼭 is_coin_arrived 변수를 잘 관리해야한다. 제 때 false로 잘 바꿔야 함. is_quiz_arrived도 마찬가지.
-    }
-    boolean is_coin_arrived = false;//coin, coin_size는 동시에 도착함
-    int[] coin;//현재 접속중인 유저들의 코인 현황. 예를 들어 coin[2]에는 2번 유저의 코인 값이 저장되어 있다. 단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
-    //coin배열의 값을 수정해도 서버에서 처리되는 것이기에 코인을 증가시킬 수 없다. 물론 잠깐은 증가된 것처럼 보일 수 있겠지만, 서버에서 데이터를 받아와서 업데이트 시키면 무효.
-    int coin_size = 0;//coin 배열의 길이
-
-    boolean is_user_number_arrived = false;
-    int user_number = -1; // 자신의 유저번호. 즉, 자신의 코인 값은 coin[user_number]로 볼 수 있다.
-    public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
-        if(correct_or_not){
-            write_to_server(0);
-            write_to_server(0);
-        }
-        else{
-            write_to_server(0);
-            write_to_server(1);
-        }
-    }
 
     public static int byteArrayToInt(byte[] b) {
         if (b.length == 4)
@@ -172,7 +105,141 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+    public String get_string_from_server(){
 
+        String result ="";
+        try {
+
+            byte[] temp_buf = new byte[4];
+            int[] temp;
+            socket_in.read(temp_buf, 0, 4);
+            temp = getIntArrayFromByteArray(temp_buf, 1);
+            int size = temp[0];
+            if(size != 0){
+                temp_buf = new byte[size];
+                socket_in.read(temp_buf, 0, size);
+               result= temp_buf.toString();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+    //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
+
+    public synchronized void do_this_when_quiz_arrived(){
+        mytime = quiz_time;
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String ranking ="";
+                //List<int[]> rank = new ArrayList<>(Arrays.asList(coin));
+                List<Integer> rank = new ArrayList<>();
+
+                for(int i=0; i<coin_size;i++){
+                    rank.add(new Integer(coin[i]));
+                }
+
+                Collections.reverse(rank);
+                if(user>=5){
+                    for(int i=1; i<=5;i++){
+                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                    }
+                }else{
+                    for(int i=1; i<=user;i++){
+                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                    }
+                }
+                answer.setEnabled(true);
+                answer.setHint("정답을 입력하세요");
+                rank1.setText(ranking);
+            }
+        });
+        for(int i=0; i<q_size-1;i++){
+            s+= String.valueOf(quiz[i]) +" ";
+            question.setText(s);
+        }
+        s="";
+        is_quiz_arrived = false;
+    }
+
+    boolean is_quiz_arrived = false; //quiz,q_size,quiz_time은 세트로 동시에 도착함.
+    int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
+    int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
+    int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
+    public synchronized void do_this_when_coin_arrived(){
+
+        info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
+        is_coin_arrived = false;
+
+        //네트워크 쪽에서 값을 받아오는 스레드와, 이 함수를 실행시키는 스레드를 분리시켜 놓았으므로, 꼭 is_coin_arrived 변수를 잘 관리해야한다. 제 때 false로 잘 바꿔야 함. is_quiz_arrived도 마찬가지.
+    }
+
+    boolean is_coin_arrived = false;//coin, coin_size는 동시에 도착함
+    int[] coin;//현재 접속중인 유저들의 코인 현황. 예를 들어 coin[2]에는 2번 유저의 코인 값이 저장되어 있다. 단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
+    //coin배열의 값을 수정해도 서버에서 처리되는 것이기에 코인을 증가시킬 수 없다. 물론 잠깐은 증가된 것처럼 보일 수 있겠지만, 서버에서 데이터를 받아와서 업데이트 시키면 무효.
+    int coin_size = 0;//coin 배열의 길이
+
+    boolean is_user_number_arrived = false;
+    int user_number = -1; // 자신의 유저번호. 즉, 자신의 코인 값은 coin[user_number]로 볼 수 있다.
+    public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
+        if(correct_or_not){
+            write_to_server(0);
+            write_to_server(0);
+        }
+        else{
+            write_to_server(0);
+            write_to_server(1);
+        }
+    }
+
+    boolean is_nickname_arrived = false;
+    String[] other_nicknames;//그냥 nicknames로 하려니까, nickname변수랑 헷갈릴 거 같아서 이렇게 명명함.
+    int other_nicknames_size = 0;
+    public synchronized void do_this_when_nicknames_arrived(){
+        is_nickname_arrived = false;
+    }
+
+    int my_attack_success = 0; // 공격을 시도하기 전, 항상 이 변수를 0으로 맞춰놓는다. 이 변수가 1로 바뀌는 순간, 내 공격이 성공한 것이고, 2로 바뀌면 실패한 것이다. 그대로 0이면, 아직 내 공격에 대한 성공 여부가 서버로 부터 도착하지 않은 것이다.
+    public synchronized void do_this_when_attacked(int attacked_by, boolean attack_success){
+        //attacked_by에는 자신을 공격한 유저의 유저번호가 담겨있다.
+        if(attack_success == true){
+            //상대의 공격이 성공한 경우
+        }
+        else if(attack_success == false){
+            //상대의 공격이 실패한 경우 (실드에 막힘). 실드의 소모는 서버에서 자동으로 이미 처리 됨.
+        }
+
+        //공격의 경우에는 false로 만들어줄 arrived변수는 없음.
+    }
+
+    int my_shield = 0; //내 실드 아이템의 개수. 3개가 최대.
+    boolean is_my_shield_arrived = false;
+    public synchronized void do_this_when_my_shield_arrived(){
+        is_my_shield_arrived = false;
+    }
+
+    public synchronized void buy_item(int item_code, int user_number){
+        //당연히 서버로 구매 신호를 보내는 거기 때문에, 이 함수는 메인 스레드에서 실행하면 안된다.
+        //코인이 부족하거나, 이미 접속이 끊어진 유저에게 공격을 보낸다던가 하는 경우에는 아무런 동작도 하지 않는다. 오류는 안나니 걱정 하지 마세요. 그냥 아무런 동작도 안함.
+
+        /*
+        가격은 추후 변동될 예정.
+        0: 공격하기 20코인 :usernumber를 공격한다.
+        1: 실드 구매 30코인
+         */
+        switch (item_code){
+            case 0://공격하기
+                send_signal(4);
+                write_to_server(user_number);
+                break;
+            case 1://실드 구매
+                send_signal(5);
+                break;
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -224,7 +291,6 @@ public class MainActivity extends AppCompatActivity {
                                 temp = getIntArrayFromByteArray(buf, 1);
                                 quiz_time = temp[0];
                                 is_quiz_arrived = true;
-                               // do_this_when_quiz_arrived();
                                 break;
                             case 1:
                                 //서버로 부터 coin정보 데이터가 도착한 경우
@@ -234,9 +300,60 @@ public class MainActivity extends AppCompatActivity {
                                 socket_in.read(buf, 0, 4 * coin_size);
                                 coin = getIntArrayFromByteArray(buf, coin_size);
                                 is_coin_arrived = true;
-                                //do_this_when_coin_arrived();
                                 break;
                             case 2:
+                                break;
+                            case 3:
+                                //서버로 부터 닉네임 정보 데이터가 도착한 경우
+                                socket_in.read(buf, 0, 4);
+                                temp = getIntArrayFromByteArray(buf, 1);
+                                other_nicknames_size = temp[0]+4;
+                                other_nicknames = new String[other_nicknames_size];
+                                for(int i = 4 ; i <other_nicknames_size;++i){
+                                    other_nicknames[i] = get_string_from_server();
+                                }
+                                is_nickname_arrived = true;
+                                break;
+                            case 4:
+                                //서버로 부터 공격 신호가 도착한 경우
+                                socket_in.read(buf, 0, 4);
+                                temp = getIntArrayFromByteArray(buf, 1);
+                                switch(temp[0]){
+                                    case 0:
+                                        //내 공격이 성공한 경우
+                                        my_attack_success = 1;
+                                        break;
+                                    case 1:
+                                        //내 공격이 실패한 경우
+                                        my_attack_success = 2;
+                                        break;
+                                    case 2:
+                                        //상대의 공격시도가 성공한 경우
+                                    {
+                                        socket_in.read(buf, 0, 4);
+                                        int[] temp2;
+                                        temp2 = getIntArrayFromByteArray(buf, 1);
+                                        do_this_when_attacked(temp2[0],true);
+                                    }
+                                        break;
+                                    case 3:
+                                    {
+                                        socket_in.read(buf, 0, 4);
+                                        int[] temp2;
+                                        temp2 = getIntArrayFromByteArray(buf, 1);
+                                        do_this_when_attacked(temp2[0],false);
+                                    }
+                                        //상대의 공격시도가 실패한 경우
+                                        break;
+                                }
+
+                                break;
+
+                            case 5:
+                                //서버로 부터 자신의 실드 아이템 개수 정보가 도착한 경우
+                                socket_in.read(buf, 0, 4);
+                                temp = getIntArrayFromByteArray(buf, 1);
+                                my_shield = temp[0];
                                 break;
                         }
 
@@ -310,6 +427,8 @@ public class MainActivity extends AppCompatActivity {
                     try{
                         if (is_coin_arrived) do_this_when_coin_arrived();
                         if (is_quiz_arrived) do_this_when_quiz_arrived();
+                        if (is_nickname_arrived) do_this_when_nicknames_arrived();
+                        if (is_my_shield_arrived) do_this_when_my_shield_arrived();
 
                         Thread.sleep(1000);
                     }catch (InterruptedException e) {
