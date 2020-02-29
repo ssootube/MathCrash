@@ -470,7 +470,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view){
 
+
                 String ans = String.valueOf(et_answer.getText());
+                if(ans.equals("")){//아무것도 입력하지 않은 경우
+                    return;
+                }
                 boolean checkDigit = true;
 
                 if(ans.charAt(0) == '-'){
