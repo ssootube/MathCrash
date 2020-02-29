@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
+    int version = 1;
     int port;
     long mytime;
     int user_online; //온라인 상태인 유저의 수
@@ -305,6 +306,20 @@ public class MainActivity extends AppCompatActivity {
                     socket_out = new BufferedOutputStream(socket.getOutputStream());
                     socket_in = new BufferedInputStream(socket.getInputStream());
                     buf= new byte[50];
+
+                    //서버에 현재 버전을 전송합니다.
+                    write_to_server(version);
+                    if(get_int_from_server() != version){
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "버전이 맞지 않아 접속할 수 없습니다. 업데이트를 해주세요.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        startActivity(intent);
+                        finish();
+                        return;
+                    }
 
                     //서버에 닉네임을 전송합니다.
                     write_to_server(nickname);
