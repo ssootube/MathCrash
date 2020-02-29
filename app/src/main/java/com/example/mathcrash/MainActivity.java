@@ -44,13 +44,24 @@ public class MainActivity extends AppCompatActivity {
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
-    TextView question, info, ccu, rank1;
-    Button submit, exit;
-    EditText answer;
-    ProgressBar timer;
+    TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel;
+    Button btn_submit, btn_exit;
+    EditText et_answer;
+    ProgressBar pb_timer;
 
     String s = "";
 
+    public int get_int_from_server(){
+        byte[] temp_buf = new byte[4];
+        int[] result = new int[1];
+        try {
+            socket_in.read(temp_buf, 0, 4);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        result = getIntArrayFromByteArray(temp_buf, 1);
+        return result[0];
+    }
     public static int byteArrayToInt(byte[] b) {
         if (b.length == 4)
             return b[0] << 24 | (b[1] & 0xff) << 16 | (b[2] & 0xff) << 8
@@ -136,15 +147,18 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                answer.setEnabled(true);
-                answer.setHint("정답을 입력하세요");
+                et_answer.setEnabled(true);
+                et_answer.setHint("정답을 입력하세요");
 
             }
         });
         for(int i=0; i<q_size-1;i++){
-            s+= String.valueOf(quiz[i]) +" ";
-            question.setText(s);
+            s+= String.valueOf(quiz[i]) +"→";
         }
+        s+= "?";
+        tv_question.setText(s);
+        tv_quizlevel.setText("난이도:"+Integer.toString(quiz_level));
+        pb_timer.setMax(quiz_time_limit);
         s="";
         is_quiz_arrived = false;
     }
@@ -153,9 +167,11 @@ public class MainActivity extends AppCompatActivity {
     int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
     int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
     int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
+    int quiz_level = 0;
+    int quiz_time_limit;
     public synchronized void do_this_when_coin_arrived(){
 
-        info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
+        tv_info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
 
         runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
             @Override
@@ -176,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
                         ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
                     }
                 }
-                rank1.setText(ranking);
+                tv_rank1.setText(ranking);
             }
         });
 
@@ -216,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
                 for(int i=0; i<coin_size; i++){
                     if(coin[i]!=0) temp++;
                 }
-                ccu.setText(String.valueOf(temp) +"명 접속 중입니다");
+                tv_ccu.setText(String.valueOf(temp) +"명 접속 중입니다");
                 user_online = temp; //스레드를 사용할 때에는 전역 변수에 완성된 결과만을 담자. 중간에 끊켜서 들어갈 수도 있다. 전역변수 채로 카운트 하지 말자.
             }
         });
@@ -270,14 +286,15 @@ public class MainActivity extends AppCompatActivity {
         nickname = getIntent().getExtras().getString("nickname");//LoginActivity에서 받아온 닉네임 정보를 저장한다.
         port = Integer.valueOf(getIntent().getExtras().getString("port"));//LoginActivity에서 받아온 포트번호 정보를 저장한다.
 
-        question = (TextView)findViewById(R.id.question);
-        submit = (Button)findViewById(R.id.submit);
-        answer = (EditText)findViewById(R.id.answer);
-        info = (TextView)findViewById(R.id.info);
-        exit = (Button)findViewById(R.id.exit);
-        ccu = (TextView)findViewById(R.id.ccu);
-        rank1 = (TextView)findViewById(R.id.rank1);
-        timer = (ProgressBar)findViewById(R.id.timer);
+        tv_question = (TextView)findViewById(R.id.question);
+        btn_submit = (Button)findViewById(R.id.submit);
+        et_answer = (EditText)findViewById(R.id.answer);
+        tv_info = (TextView)findViewById(R.id.info);
+        btn_exit = (Button)findViewById(R.id.exit);
+        tv_ccu = (TextView)findViewById(R.id.ccu);
+        tv_rank1 = (TextView)findViewById(R.id.rank1);
+        tv_quizlevel = (TextView)findViewById(R.id.quiz_level);
+        pb_timer = (ProgressBar)findViewById(R.id.timer);
 
         Thread worker = new Thread() {
              public void run() {
@@ -293,33 +310,24 @@ public class MainActivity extends AppCompatActivity {
                     write_to_server(nickname);
 
                     //유저번호를 받아옵니다.
-                    socket_in.read(buf,0,4);
-                    int[] temp_buf = getIntArrayFromByteArray(buf,1);
-                    user_number = temp_buf[0];
+                    user_number = get_int_from_server();
                     is_user_number_arrived = true;
 
                     while(socket.isConnected()) {
-                        socket_in.read(buf, 0, 4);
-                        temp_buf = getIntArrayFromByteArray(buf, 1);
-                        int[] temp;
-                        switch (temp_buf[0]) {
+                        switch (get_int_from_server()) {
                             case 0:
                                 //서버로 부터 수열 추리 문제가 도착한 경우
-                                socket_in.read(buf, 0, 4);
-                                temp = getIntArrayFromByteArray(buf, 1);
-                                q_size = temp[0];
+                                q_size = get_int_from_server();
                                 socket_in.read(buf, 0, 4 * q_size);
                                 quiz = getIntArrayFromByteArray(buf, q_size);
-                                socket_in.read(buf, 0, 4);
-                                temp = getIntArrayFromByteArray(buf, 1);
-                                quiz_time = temp[0];
+                                quiz_level= get_int_from_server();
+                                quiz_time = get_int_from_server();
+                                quiz_time_limit = get_int_from_server();
                                 is_quiz_arrived = true;
                                 break;
                             case 1:
                                 //서버로 부터 coin정보 데이터가 도착한 경우
-                                socket_in.read(buf, 0, 4);
-                                temp = getIntArrayFromByteArray(buf, 1);
-                                coin_size = temp[0];
+                                coin_size = get_int_from_server();
                                 socket_in.read(buf, 0, 4 * coin_size);
                                 coin = getIntArrayFromByteArray(buf, coin_size);
                                 is_coin_arrived = true;
@@ -328,9 +336,7 @@ public class MainActivity extends AppCompatActivity {
                                 break;
                             case 3:
                                 //서버로 부터 닉네임 정보 데이터가 도착한 경우
-                                socket_in.read(buf, 0, 4);
-                                temp = getIntArrayFromByteArray(buf, 1);
-                                other_nicknames_size = temp[0]+4;
+                                other_nicknames_size = get_int_from_server()+4;
                                 other_nicknames = new String[other_nicknames_size];
                                 for(int i = 4 ; i <other_nicknames_size;++i){
                                     other_nicknames[i] = get_string_from_server();
@@ -339,9 +345,7 @@ public class MainActivity extends AppCompatActivity {
                                 break;
                             case 4:
                                 //서버로 부터 공격 신호가 도착한 경우
-                                socket_in.read(buf, 0, 4);
-                                temp = getIntArrayFromByteArray(buf, 1);
-                                switch(temp[0]){
+                                switch(get_int_from_server()){
                                     case 0:
                                         //내 공격이 성공한 경우
                                         my_attack_success = 1;
@@ -352,20 +356,11 @@ public class MainActivity extends AppCompatActivity {
                                         break;
                                     case 2:
                                         //상대의 공격시도가 성공한 경우
-                                    {
-                                        socket_in.read(buf, 0, 4);
-                                        int[] temp2;
-                                        temp2 = getIntArrayFromByteArray(buf, 1);
-                                        do_this_when_attacked(temp2[0],true);
-                                    }
+                                        do_this_when_attacked(get_int_from_server(),true);
+
                                         break;
                                     case 3:
-                                    {
-                                        socket_in.read(buf, 0, 4);
-                                        int[] temp2;
-                                        temp2 = getIntArrayFromByteArray(buf, 1);
-                                        do_this_when_attacked(temp2[0],false);
-                                    }
+                                        do_this_when_attacked(get_int_from_server(),false);
                                         //상대의 공격시도가 실패한 경우
                                         break;
                                 }
@@ -374,14 +369,12 @@ public class MainActivity extends AppCompatActivity {
 
                             case 5:
                                 //서버로 부터 자신의 실드 아이템 개수 정보가 도착한 경우
-                                socket_in.read(buf, 0, 4);
-                                temp = getIntArrayFromByteArray(buf, 1);
-                                my_shield = temp[0];
+                                my_shield = get_int_from_server();
                                 is_my_shield_arrived = true;
                                 break;
                         }
 
-                        exit.setOnClickListener(new View.OnClickListener() {
+                        btn_exit.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 try {
@@ -455,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {//quiz_time변수에 변동이 있을 경우만 프로그레스 바를 set 해준다. 이 조건문 안에서 실행하면 더 효율적이다.
                             @Override
                             public void run() {
-                                timer.setProgress(quiz_time);
+                                pb_timer.setProgress(quiz_time);
                             }
                         });
                     }
@@ -473,11 +466,11 @@ public class MainActivity extends AppCompatActivity {
         gamePlay.start();
 
 
-        submit.setOnClickListener(new View.OnClickListener(){
+        btn_submit.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
 
-                String ans = String.valueOf(answer.getText());
+                String ans = String.valueOf(et_answer.getText());
                 boolean checkDigit = true;
 
                 if(ans.charAt(0) == '-'){
@@ -506,8 +499,8 @@ public class MainActivity extends AppCompatActivity {
                               }
                             };
                         correct.start();
-                        answer.setEnabled(false);
-                        answer.setHint("");
+                        et_answer.setEnabled(false);
+                        et_answer.setHint("");
                     }else{
                         Toast.makeText(getApplicationContext(),"틀렸습니다", Toast.LENGTH_LONG).show();
                         Thread fail = new Thread() {
@@ -520,7 +513,7 @@ public class MainActivity extends AppCompatActivity {
                 }else{
                     Toast.makeText(getApplicationContext(),"숫자만 입력해주세요", Toast.LENGTH_LONG).show();
                 }
-                answer.setText("");
+                et_answer.setText("");
 
             }
         });

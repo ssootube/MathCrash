@@ -2,7 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical" >
+    android:layout_marginLeft="10dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginRight="10dp"
+    android:orientation="vertical">
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -10,30 +14,30 @@
         android:textSize="20dp"
 
         />
+
     <EditText
         android:id="@+id/edt_port"
-        android:hint="포트번호"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20dp"
-        android:maxLength="5"
+        android:hint="포트번호"
         android:inputType="number"
-        />
+        android:maxLength="5"
+        android:textSize="20dp" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="닉네임을 입력하세요"
-        android:textSize="20dp"
-        />
+        android:textSize="20dp" />
+
     <EditText
         android:id="@+id/edt_nickname"
-        android:hint="닉네임"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20dp"
-        android:maxLength="10"
+        android:hint="닉네임"
         android:inputType="textPersonName"
-        />
+        android:maxLength="10"
+        android:textSize="20dp" />
 
     <Button
         android:id="@+id/btn_login"
