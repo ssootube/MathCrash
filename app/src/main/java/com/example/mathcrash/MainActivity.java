@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
-    int port, mytime, user;
+    int port;
+    long mytime;
+    int user_online; //온라인 상태인 유저의 수
     String nickname;
     private Socket socket;
     String serverIP = "49.50.162.149";
@@ -129,32 +131,14 @@ public class MainActivity extends AppCompatActivity {
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
     public synchronized void do_this_when_quiz_arrived(){
-        mytime = quiz_time;
-
+        mytime = System.currentTimeMillis();
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                String ranking ="";
-                //List<int[]> rank = new ArrayList<>(Arrays.asList(coin));
-                List<Integer> rank = new ArrayList<>();
 
-                for(int i=0; i<coin_size;i++){
-                    rank.add(new Integer(coin[i]));
-                }
-
-                Collections.reverse(rank);
-                if(user>=5){
-                    for(int i=1; i<=5;i++){
-                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
-                    }
-                }else{
-                    for(int i=1; i<=user;i++){
-                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
-                    }
-                }
                 answer.setEnabled(true);
                 answer.setHint("정답을 입력하세요");
-                rank1.setText(ranking);
+
             }
         });
         for(int i=0; i<q_size-1;i++){
@@ -172,6 +156,31 @@ public class MainActivity extends AppCompatActivity {
     public synchronized void do_this_when_coin_arrived(){
 
         info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
+
+        runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
+            @Override
+            public void run() {
+                String ranking ="";
+                List<Integer> rank = new ArrayList<>();
+                for(int i=0; i<coin_size;i++){
+                    rank.add(new Integer(coin[i]));
+                }
+
+                Collections.reverse(rank);
+                if(user_online>=5){
+                    for(int i=1; i<=5;i++){
+                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                    }
+                }else{
+                    for(int i=1; i<=user_online;i++){
+                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                    }
+                }
+                rank1.setText(ranking);
+            }
+        });
+
+
         is_coin_arrived = false;
 
         //네트워크 쪽에서 값을 받아오는 스레드와, 이 함수를 실행시키는 스레드를 분리시켜 놓았으므로, 꼭 is_coin_arrived 변수를 잘 관리해야한다. 제 때 false로 잘 바꿔야 함. is_quiz_arrived도 마찬가지.
@@ -199,6 +208,19 @@ public class MainActivity extends AppCompatActivity {
     String[] other_nicknames;//그냥 nicknames로 하려니까, nickname변수랑 헷갈릴 거 같아서 이렇게 명명함.
     int other_nicknames_size = 0;
     public synchronized void do_this_when_nicknames_arrived(){
+
+        runOnUiThread(new Runnable() {//닉네임은 접속하거나 종료할 때만 변경되므로, 이 부분에 접속자 체크를 하는 게 더 효율적이다.
+            @Override
+            public void run() {
+                int temp = 0;
+                for(int i=0; i<coin_size; i++){
+                    if(coin[i]!=0) temp++;
+                }
+                ccu.setText(String.valueOf(temp) +"명 접속 중입니다");
+                user_online = temp; //스레드를 사용할 때에는 전역 변수에 완성된 결과만을 담자. 중간에 끊켜서 들어갈 수도 있다. 전역변수 채로 카운트 하지 말자.
+            }
+        });
+
         is_nickname_arrived = false;
     }
 
@@ -426,34 +448,24 @@ public class MainActivity extends AppCompatActivity {
         Thread gamePlay = new Thread() {
             public void run() {
                 while(true) {
-                    mytime++;
-                    try{
-                        if (is_coin_arrived) do_this_when_coin_arrived();
-                        if (is_quiz_arrived) do_this_when_quiz_arrived();
-                        if (is_nickname_arrived) do_this_when_nicknames_arrived();
-                        if (is_my_shield_arrived) do_this_when_my_shield_arrived();
+                    if(System.currentTimeMillis()-mytime > 1000){
+                        quiz_time+=(int)Math.round((System.currentTimeMillis()-mytime)/1000);
+                        mytime=System.currentTimeMillis();
 
-                        Thread.sleep(1000);//게임 플레이 내부에 시간 지연은 삭제해주세요.
-                    }catch (InterruptedException e) {
-                        e.printStackTrace();
+                        runOnUiThread(new Runnable() {//quiz_time변수에 변동이 있을 경우만 프로그레스 바를 set 해준다. 이 조건문 안에서 실행하면 더 효율적이다.
+                            @Override
+                            public void run() {
+                                timer.setProgress(quiz_time);
+                            }
+                        });
                     }
 
-                    //이 아래 부분은 어차피 메인스레드(UIThread)에서 실행하는 거라면, gameplay스레드 외부에다가 배치해도 될 거 같습니다.
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            user=0;
-                            timer.setProgress(mytime);
+                    //아래 if문 순서도 동작에 영향을 미치니 바꾸지 말것.
+                    if (is_nickname_arrived) do_this_when_nicknames_arrived();
+                    if (is_coin_arrived) do_this_when_coin_arrived();
+                    if (is_quiz_arrived) do_this_when_quiz_arrived();
+                    if (is_my_shield_arrived) do_this_when_my_shield_arrived();
 
-                            for(int i=0; i<coin_size; i++){
-                                if(coin[i]!=0) user++;
-                            }
-                            ccu.setText(String.valueOf(user) +"명 접속 중입니다");
-
-
-
-                        }
-                    });
 
                 }
             }
