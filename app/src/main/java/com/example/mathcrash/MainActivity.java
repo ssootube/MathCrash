@@ -10,6 +10,7 @@ import android.os.Message;
 import android.os.Vibrator;
 import android.util.Log;
 import android.util.Xml;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -486,6 +487,7 @@ public class MainActivity extends AppCompatActivity {
         gamePlay.start();
 
 
+
         btn_submit.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view){
@@ -541,6 +543,18 @@ public class MainActivity extends AppCompatActivity {
                 }
                 et_answer.setText("");
 
+            }
+        });
+
+        et_answer.setOnKeyListener(new View.OnKeyListener(){
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent){
+                switch (i){
+                    case KeyEvent.KEYCODE_ENTER:
+                        btn_submit.performClick();
+                        return true;
+                }
+                return false;
             }
         });
 
