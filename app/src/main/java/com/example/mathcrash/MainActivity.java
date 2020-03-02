@@ -183,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
                     rank.add(new Integer(coin[i]));
                 }
 
+                Collections.sort(rank);
                 Collections.reverse(rank);
                 if(user_online>=5){
                     for(int i=1; i<=5;i++){
