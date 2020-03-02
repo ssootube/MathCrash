@@ -2,10 +2,12 @@ package com.example.mathcrash;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.Log;
 import android.util.Xml;
 import android.view.View;
@@ -179,9 +181,11 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 String ranking ="";
                 List<Integer> rank = new ArrayList<>();
+                String []useruser = other_nicknames;
                 for(int i=0; i<coin_size;i++){
                     rank.add(new Integer(coin[i]));
                 }
+
 
                 Collections.sort(rank);
                 Collections.reverse(rank);
@@ -513,6 +517,8 @@ public class MainActivity extends AppCompatActivity {
 
                     if(Integer.parseInt(ans) == quiz[q_size-1]){
                         Toast.makeText(getApplicationContext(),"정답입니다", Toast.LENGTH_LONG).show();
+                        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                        vibrator.vibrate(1000);
                         Thread correct = new Thread() {
                             public void run() {
                                 answer_to_server(true);
