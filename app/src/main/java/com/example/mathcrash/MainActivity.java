@@ -182,9 +182,11 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 String ranking ="";
                 List<Integer> rank = new ArrayList<>();
+                List<Integer> origin_rank = new ArrayList<>();
                 String []useruser = other_nicknames;
                 for(int i=0; i<coin_size;i++){
                     rank.add(new Integer(coin[i]));
+                    origin_rank.add(new Integer(coin[i]));
                 }
 
 
@@ -192,6 +194,11 @@ public class MainActivity extends AppCompatActivity {
                 Collections.reverse(rank);
                 if(user_online>=5){
                     for(int i=1; i<=5;i++){
+                        for(int j=0; j<other_nicknames_size;j++){
+                            if(rank.get(i-1).equals(origin_rank.get(j))){
+
+                            }
+                        }
                         ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
                     }
                 }else{
