@@ -124,24 +124,35 @@ public class MainActivity extends AppCompatActivity {
     }
     public String get_string_from_server(){
 
-        String result ="";
+        String result="";
         try {
-
-            byte[] temp_buf = new byte[4];
-            int[] temp;
-            socket_in.read(temp_buf, 0, 4);
-            temp = getIntArrayFromByteArray(temp_buf, 1);
-            int size = temp[0];
+            int size = get_int_from_server();
             if(size != 0){
-                temp_buf = new byte[size];
+                byte[] temp_buf = new byte[size];
                 socket_in.read(temp_buf, 0, size);
-               result= temp_buf.toString();
+               result= new String(temp_buf,"UTF-8");
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
         return result;
+    }
+
+    class Pair implements Comparable<Pair>{
+        String nickname;
+        Integer coin;
+
+        public Pair(String nickname, Integer coin){
+            this.nickname = nickname;
+            this.coin = coin;
+        }
+
+        @Override
+        public int compareTo(Pair o) {
+            if(this.coin < o.coin) return 1;
+            else return -1;
+        }
     }
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
@@ -223,29 +234,18 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     String ranking ="";
-                    List<Integer> rank = new ArrayList<>();
-                    List<Integer> origin_rank = new ArrayList<>();
-                    String []useruser = other_nicknames.data;
+                    List<Pair> rank = new ArrayList<>();
                     for(int i=0; i<length;i++){
-                        rank.add(new Integer(data[i]));
-                        origin_rank.add(new Integer(data[i]));
+                        rank.add(new Pair(other_nicknames.data[i],coin.data[i]));
                     }
-
-
                     Collections.sort(rank);
-                    Collections.reverse(rank);
                     if(user_online>=5){
                         for(int i=1; i<=5;i++){
-                            for(int j=0; j<other_nicknames.length;j++){
-                                if(rank.get(i-1).equals(origin_rank.get(j))){
-
-                                }
-                            }
-                            ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                            ranking += i +"위: [" +rank.get(i-1).nickname+"] 님 "+ String.valueOf(rank.get(i-1).coin) +"개 \n";
                         }
                     }else{
                         for(int i=1; i<=user_online;i++){
-                            ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                            ranking += i +"위: [" +rank.get(i-1).nickname+"] 님 "+ String.valueOf(rank.get(i-1).coin) +"개 \n";
                         }
                     }
                     tv_rank1.setText(ranking);
@@ -255,11 +255,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
-
-
-
-
     public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
         if(correct_or_not){
             write_to_server(0);
@@ -281,8 +276,9 @@ public class MainActivity extends AppCompatActivity {
         void update(){
             length = get_int_from_server()+4;
              data = new String[length];
-            for(int i = 4 ; i <length;++i){
-                data[i] = get_string_from_server();
+            for(int i = 0 ; i <length;++i){
+                if(i>=4) data[i] = get_string_from_server();
+                else data[i] = new String();
             }
             is_arrived = true;
             do_this_when_arrived();
@@ -302,8 +298,6 @@ public class MainActivity extends AppCompatActivity {
             is_arrived = false;
         }
     }
-
-
 
     Quiz quiz = new Quiz();
     Coin coin = new Coin();
