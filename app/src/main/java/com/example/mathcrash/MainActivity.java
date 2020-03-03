@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
-    int version = 1;
+    int version = 2;
     int port;
     long mytime;
     int user_online; //온라인 상태인 유저의 수
