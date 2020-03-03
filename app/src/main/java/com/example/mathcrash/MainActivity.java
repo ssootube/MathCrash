@@ -145,84 +145,121 @@ public class MainActivity extends AppCompatActivity {
     }
     //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
-    public synchronized void do_this_when_quiz_arrived(){
-        mytime = System.currentTimeMillis();
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
 
-                et_answer.setEnabled(true);
-                et_answer.setHint("정답을 입력하세요");
+    public class Quiz{
+        boolean is_arrived = false;
+        int length = 0;//수열추리 문제의 길이. quiz.data[q_size-1]에 담긴 값이 정답이고, quiz.data[0]~quiz.data[q_size-2]에는 문제가 담겨 있다.
+        int time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
+        int time_limit;
+        int level = 0;
+        int[] data;
+        void do_this_when_arrived(){//퀴즈가 도착했을 경우 아래를 실행합니다.
+            mytime = System.currentTimeMillis();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    et_answer.setEnabled(true);
+                    et_answer.setHint("정답을 입력하세요");
 
+                }
+            });
+            for(int i=0; i<length-1;i++){
+                s+= String.valueOf(data[i]) +"→";
             }
-        });
-        for(int i=0; i<q_size-1;i++){
-            s+= String.valueOf(quiz[i]) +"→";
+            s+= "?";
+            tv_question.setText(s);
+            tv_quizlevel.setText("난이도:"+Integer.toString(level));
+            pb_timer.setMax(time_limit);
+            s="";
+            is_arrived = false;
         }
-        s+= "?";
-        tv_question.setText(s);
-        tv_quizlevel.setText("난이도:"+Integer.toString(quiz_level));
-        pb_timer.setMax(quiz_time_limit);
-        s="";
-        is_quiz_arrived = false;
-    }
-
-    boolean is_quiz_arrived = false; //quiz,q_size,quiz_time은 세트로 동시에 도착함.
-    int[] quiz;//현재의 수열추리 문제가 담겨 있는 배열
-    int q_size = 0;//수열추리 문제의 길이. quiz[q_size-1]에 담긴 값이 정답이고, quiz[0]~quiz[q_size-2]에는 문제가 담겨 있다.
-    int quiz_time = 0;//가장 최근의 수열추리 문제 출제 직후 흐른시간. 초단위. 남은시간이 아니라 흐른 시간이다.
-    int quiz_level = 0;
-    int quiz_time_limit;
-    public synchronized void do_this_when_coin_arrived(){
-
-        tv_info.setText(nickname +"님의 COIN "+ coin[user_number] +"개");
-
-        runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
-            @Override
-            public void run() {
-                String ranking ="";
-                List<Integer> rank = new ArrayList<>();
-                List<Integer> origin_rank = new ArrayList<>();
-                String []useruser = other_nicknames;
-                for(int i=0; i<coin_size;i++){
-                    rank.add(new Integer(coin[i]));
-                    origin_rank.add(new Integer(coin[i]));
-                }
-
-
-                Collections.sort(rank);
-                Collections.reverse(rank);
-                if(user_online>=5){
-                    for(int i=1; i<=5;i++){
-                        for(int j=0; j<other_nicknames_size;j++){
-                            if(rank.get(i-1).equals(origin_rank.get(j))){
-
-                            }
-                        }
-                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
-                    }
-                }else{
-                    for(int i=1; i<=user_online;i++){
-                        ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
-                    }
-                }
-                tv_rank1.setText(ranking);
+        void update(){//서버와 통신하므로 메인 스레드에서는 실행할 수 없는 함수입니다.
+            try {
+                length = get_int_from_server();
+                socket_in.read(buf, 0, 4 * length);
+                data = getIntArrayFromByteArray(buf,length);
+                level = get_int_from_server();
+                time = get_int_from_server();
+                time_limit = get_int_from_server();
+                is_arrived = true;
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
-
-
-        is_coin_arrived = false;
-
-        //네트워크 쪽에서 값을 받아오는 스레드와, 이 함수를 실행시키는 스레드를 분리시켜 놓았으므로, 꼭 is_coin_arrived 변수를 잘 관리해야한다. 제 때 false로 잘 바꿔야 함. is_quiz_arrived도 마찬가지.
+            do_this_when_arrived();
+        }
+        int answer(){//정답을 리턴합니다.
+            if(data.length == length) return data[length-1];
+            else {
+                //오류가 난 경우이므로 return 값은 별 의미 없습니다.
+                return -77777;
+            }
+        }
     }
 
-    boolean is_coin_arrived = false;//coin, coin_size는 동시에 도착함
-    int[] coin;//현재 접속중인 유저들의 코인 현황. 예를 들어 coin[2]에는 2번 유저의 코인 값이 저장되어 있다. 단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
-    //coin배열의 값을 수정해도 서버에서 처리되는 것이기에 코인을 증가시킬 수 없다. 물론 잠깐은 증가된 것처럼 보일 수 있겠지만, 서버에서 데이터를 받아와서 업데이트 시키면 무효.
-    int coin_size = 0;//coin 배열의 길이
 
-    boolean is_user_number_arrived = false;
-    int user_number = -1; // 자신의 유저번호. 즉, 자신의 코인 값은 coin[user_number]로 볼 수 있다.
+
+    class Coin{
+        boolean is_arrived = false;
+        int[] data;//단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
+        int length = 0;//coin 배열의 길이
+        int mine(){
+            return data[user_number];
+        }
+        void update(){
+            try {
+                length = get_int_from_server();
+                socket_in.read(buf, 0, 4 * length);
+                data = getIntArrayFromByteArray(buf, length);
+                is_arrived = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            do_this_when_arrived();
+        }
+        void do_this_when_arrived(){
+
+            tv_info.setText(nickname +"님의 COIN "+ coin.mine() +"개");
+            runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
+                @Override
+                public void run() {
+                    String ranking ="";
+                    List<Integer> rank = new ArrayList<>();
+                    List<Integer> origin_rank = new ArrayList<>();
+                    String []useruser = other_nicknames.data;
+                    for(int i=0; i<length;i++){
+                        rank.add(new Integer(data[i]));
+                        origin_rank.add(new Integer(data[i]));
+                    }
+
+
+                    Collections.sort(rank);
+                    Collections.reverse(rank);
+                    if(user_online>=5){
+                        for(int i=1; i<=5;i++){
+                            for(int j=0; j<other_nicknames.length;j++){
+                                if(rank.get(i-1).equals(origin_rank.get(j))){
+
+                                }
+                            }
+                            ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                        }
+                    }else{
+                        for(int i=1; i<=user_online;i++){
+                            ranking += i +"위 " + String.valueOf(rank.get(i-1)) +"개 \n";
+                        }
+                    }
+                    tv_rank1.setText(ranking);
+                }
+            });
+            is_arrived = false;
+
+        }
+    }
+
+
+
+
+
     public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
         if(correct_or_not){
             write_to_server(0);
@@ -234,25 +271,45 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    boolean is_nickname_arrived = false;
-    String[] other_nicknames;//그냥 nicknames로 하려니까, nickname변수랑 헷갈릴 거 같아서 이렇게 명명함.
-    int other_nicknames_size = 0;
-    public synchronized void do_this_when_nicknames_arrived(){
-
-        runOnUiThread(new Runnable() {//닉네임은 접속하거나 종료할 때만 변경되므로, 이 부분에 접속자 체크를 하는 게 더 효율적이다.
-            @Override
-            public void run() {
-                int temp = 0;
-                for(int i=0; i<coin_size; i++){
-                    if(coin[i]!=0) temp++;
-                }
-                tv_ccu.setText(String.valueOf(temp) +"명 접속 중입니다");
-                user_online = temp; //스레드를 사용할 때에는 전역 변수에 완성된 결과만을 담자. 중간에 끊켜서 들어갈 수도 있다. 전역변수 채로 카운트 하지 말자.
+    class NickName{
+        boolean is_arrived = false;
+        String[] data;
+        int length = 0;
+        String mine(){
+            return data[user_number];
+        }
+        void update(){
+            length = get_int_from_server()+4;
+             data = new String[length];
+            for(int i = 4 ; i <length;++i){
+                data[i] = get_string_from_server();
             }
-        });
-
-        is_nickname_arrived = false;
+            is_arrived = true;
+            do_this_when_arrived();
+        }
+        void do_this_when_arrived(){
+            runOnUiThread(new Runnable() {//닉네임은 접속하거나 종료할 때만 변경되므로, 이 부분에 접속자 체크를 하는 게 더 효율적이다.
+                @Override
+                public void run() {
+                    int temp = 0;
+                    for(int i=0; i<coin.length; i++){
+                        if(coin.data[i]!=0) temp++;
+                    }
+                    tv_ccu.setText(String.valueOf(temp) +"명 접속 중입니다");
+                    user_online = temp; //스레드를 사용할 때에는 전역 변수에 완성된 결과만을 담자. 중간에 끊켜서 들어갈 수도 있다. 전역변수 채로 카운트 하지 말자.
+                }
+            });
+            is_arrived = false;
+        }
     }
+
+
+
+    Quiz quiz = new Quiz();
+    Coin coin = new Coin();
+    NickName other_nicknames = new NickName();
+    boolean is_user_number_arrived = false;
+    int user_number = -1; // 자신의 유저번호
 
     int my_attack_success = 0; // 공격을 시도하기 전, 항상 이 변수를 0으로 맞춰놓는다. 이 변수가 1로 바뀌는 순간, 내 공격이 성공한 것이고, 2로 바뀌면 실패한 것이다. 그대로 0이면, 아직 내 공격에 대한 성공 여부가 서버로 부터 도착하지 않은 것이다.
     public synchronized void do_this_when_attacked(int attacked_by, boolean attack_success){
@@ -343,33 +400,16 @@ public class MainActivity extends AppCompatActivity {
 
                     while(socket.isConnected()) {
                         switch (get_int_from_server()) {
-                            case 0:
-                                //서버로 부터 수열 추리 문제가 도착한 경우
-                                q_size = get_int_from_server();
-                                socket_in.read(buf, 0, 4 * q_size);
-                                quiz = getIntArrayFromByteArray(buf, q_size);
-                                quiz_level= get_int_from_server();
-                                quiz_time = get_int_from_server();
-                                quiz_time_limit = get_int_from_server();
-                                is_quiz_arrived = true;
+                            case 0://서버로 부터 수열 추리 문제가 도착한 경우
+                                quiz.update();
                                 break;
-                            case 1:
-                                //서버로 부터 coin정보 데이터가 도착한 경우
-                                coin_size = get_int_from_server();
-                                socket_in.read(buf, 0, 4 * coin_size);
-                                coin = getIntArrayFromByteArray(buf, coin_size);
-                                is_coin_arrived = true;
+                            case 1://서버로 부터 coin정보 데이터가 도착한 경우
+                                coin.update();
                                 break;
                             case 2:
                                 break;
-                            case 3:
-                                //서버로 부터 닉네임 정보 데이터가 도착한 경우
-                                other_nicknames_size = get_int_from_server()+4;
-                                other_nicknames = new String[other_nicknames_size];
-                                for(int i = 4 ; i <other_nicknames_size;++i){
-                                    other_nicknames[i] = get_string_from_server();
-                                }
-                                is_nickname_arrived = true;
+                            case 3://서버로 부터 닉네임 정보 데이터가 도착한 경우
+                                other_nicknames.update();
                                 break;
                             case 4:
                                 //서버로 부터 공격 신호가 도착한 경우
@@ -470,21 +510,18 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 while(true) {
                     if(System.currentTimeMillis()-mytime > 1000){
-                        quiz_time+=(int)Math.round((System.currentTimeMillis()-mytime)/1000);
+                        quiz.time+=(int)Math.round((System.currentTimeMillis()-mytime)/1000);
                         mytime=System.currentTimeMillis();
 
                         runOnUiThread(new Runnable() {//quiz_time변수에 변동이 있을 경우만 프로그레스 바를 set 해준다. 이 조건문 안에서 실행하면 더 효율적이다.
                             @Override
                             public void run() {
-                                pb_timer.setProgress(quiz_time);
+                                pb_timer.setProgress(quiz.time);
                             }
                         });
                     }
 
                     //아래 if문 순서도 동작에 영향을 미치니 바꾸지 말것.
-                    if (is_nickname_arrived) do_this_when_nicknames_arrived();
-                    if (is_coin_arrived) do_this_when_coin_arrived();
-                    if (is_quiz_arrived) do_this_when_quiz_arrived();
                     if (is_my_shield_arrived) do_this_when_my_shield_arrived();
 
 
@@ -524,7 +561,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if(checkDigit){
 
-                    if(Integer.parseInt(ans) == quiz[q_size-1]){
+                    if(Integer.parseInt(ans) == quiz.answer()){
                         Toast.makeText(getApplicationContext(),"정답입니다", Toast.LENGTH_LONG).show();
                         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                         vibrator.vibrate(1000);
