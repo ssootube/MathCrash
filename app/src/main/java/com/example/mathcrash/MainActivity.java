@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     int version = 2;
     int port;
     long mytime;
-    int user_online; //온라인 상태인 유저의 수
     String nickname;
     private Socket socket;
     String serverIP = "49.50.162.149";
@@ -211,8 +210,21 @@ public class MainActivity extends AppCompatActivity {
 
     class Coin{
         boolean is_arrived = false;
+        private boolean n_online_checked = false;
+        private int n_online;
         int[] data;//단, 코인이 0이 저장되어 경우 중도이탈, 접속 끊킨 유저이다.
         int length = 0;//coin 배열의 길이
+        int get_n_online(){
+            if(n_online_checked) return n_online;
+            int temp = 0;
+            for(int i=0; i<coin.length; i++){
+                System.out.println("코인:"+String.valueOf(coin.data[i]));
+                if(coin.data[i]!=0) temp++;
+            }
+            n_online_checked = true;
+            n_online = temp;
+            return temp;
+        }
         int mine(){
             return data[user_number];
         }
@@ -222,12 +234,14 @@ public class MainActivity extends AppCompatActivity {
                 socket_in.read(buf, 0, 4 * length);
                 data = getIntArrayFromByteArray(buf, length);
                 is_arrived = true;
+                n_online_checked = false;
             } catch (IOException e) {
                 e.printStackTrace();
             }
             do_this_when_arrived();
         }
         void do_this_when_arrived(){
+
 
             tv_info.setText(nickname +"님의 COIN "+ coin.mine() +"개");
             runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
@@ -239,12 +253,12 @@ public class MainActivity extends AppCompatActivity {
                         rank.add(new Pair(other_nicknames.data[i],coin.data[i]));
                     }
                     Collections.sort(rank);
-                    if(user_online>=5){
+                    if(get_n_online() >=5){
                         for(int i=1; i<=5;i++){
                             ranking += i +"위: [" +rank.get(i-1).nickname+"] 님 "+ String.valueOf(rank.get(i-1).coin) +"개 \n";
                         }
                     }else{
-                        for(int i=1; i<=user_online;i++){
+                        for(int i=1; i<=get_n_online() ;i++){
                             ranking += i +"위: [" +rank.get(i-1).nickname+"] 님 "+ String.valueOf(rank.get(i-1).coin) +"개 \n";
                         }
                     }
@@ -270,6 +284,18 @@ public class MainActivity extends AppCompatActivity {
         boolean is_arrived = false;
         String[] data;
         int length = 0;
+        private boolean n_online_checked = false;
+        private int n_online;
+        int get_n_online(){
+            if(n_online_checked) return n_online;
+            int temp = 0;
+            for(int i=0; i<data.length; i++){
+                if(!data[i].isEmpty()) temp++;
+            }
+            n_online_checked = true;
+            n_online = temp;
+            return temp;
+        }
         String mine(){
             return data[user_number];
         }
@@ -281,20 +307,17 @@ public class MainActivity extends AppCompatActivity {
                 else data[i] = new String();
             }
             is_arrived = true;
+            n_online_checked = false;
             do_this_when_arrived();
         }
         void do_this_when_arrived(){
-            runOnUiThread(new Runnable() {//닉네임은 접속하거나 종료할 때만 변경되므로, 이 부분에 접속자 체크를 하는 게 더 효율적이다.
-                @Override
-                public void run() {
-                    int temp = 0;
-                    for(int i=0; i<coin.length; i++){
-                        if(coin.data[i]!=0) temp++;
-                    }
-                    tv_ccu.setText(String.valueOf(temp) +"명 접속 중입니다");
-                    user_online = temp; //스레드를 사용할 때에는 전역 변수에 완성된 결과만을 담자. 중간에 끊켜서 들어갈 수도 있다. 전역변수 채로 카운트 하지 말자.
-                }
-            });
+
+            runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
+                              @Override
+                              public void run() {
+                                  tv_ccu.setText(String.valueOf(get_n_online()) + "명 접속 중입니다");
+                              }
+                          });
             is_arrived = false;
         }
     }
