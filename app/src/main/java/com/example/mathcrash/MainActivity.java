@@ -164,17 +164,17 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     et_answer.setEnabled(true);
                     et_answer.setHint("정답을 입력하세요");
-
+                    for(int i=0; i<length-1;i++){
+                        s+= String.valueOf(data[i]) +"→";
+                    }
+                    s+= "?";
+                    tv_question.setText(s);
+                    tv_quizlevel.setText("난이도:"+Integer.toString(level));
+                    pb_timer.setMax(time_limit);
+                    s="";
                 }
             });
-            for(int i=0; i<length-1;i++){
-                s+= String.valueOf(data[i]) +"→";
-            }
-            s+= "?";
-            tv_question.setText(s);
-            tv_quizlevel.setText("난이도:"+Integer.toString(level));
-            pb_timer.setMax(time_limit);
-            s="";
+
             is_arrived = false;
         }
         void update(){//서버와 통신하므로 메인 스레드에서는 실행할 수 없는 함수입니다.
@@ -234,10 +234,11 @@ public class MainActivity extends AppCompatActivity {
         void do_this_when_arrived(){
 
 
-            tv_info.setText(nickname +"님의 COIN "+ coin.mine() +"개");
+
             runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
                 @Override
                 public void run() {
+                    tv_info.setText(nickname +"님의 COIN "+ coin.mine() +"개");
                     String ranking ="";
                     List<Pair> rank = new ArrayList<>();
                     for(int i=0; i<length;i++){
@@ -356,7 +357,11 @@ public class MainActivity extends AppCompatActivity {
     int my_shield = 0; //내 실드 아이템의 개수. 3개가 최대.
     boolean is_my_shield_arrived = false;
     public synchronized void do_this_when_my_shield_arrived(){
-        tv_shield.setText("실드 :" + my_shield + "/" + Max_shield);
+        runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
+            @Override
+            public void run() {
+                tv_shield.setText("실드 :" + my_shield + "/" + Max_shield);
+            }});
         is_my_shield_arrived = false;
     }
 
@@ -394,7 +399,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void buy_attack(View v){
-        tv_board.setText("");
+        runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
+            @Override
+            public void run() {
+                tv_board.setText("");
+            }});
         if(coin.mine() > item_price_attack){
             List<Integer> attack_list = new ArrayList<Integer>();
             for(int i = 0 ; i < coin.length; ++i){
@@ -496,6 +505,7 @@ public class MainActivity extends AppCompatActivity {
                     while(socket.isConnected()) {
                         switch (get_int_from_server()) {
                             case 0://서버로 부터 수열 추리 문제가 도착한 경우
+                                System.out.println(nickname);
                                 quiz.update();
                                 break;
                             case 1://서버로 부터 coin정보 데이터가 도착한 경우
@@ -546,8 +556,12 @@ public class MainActivity extends AppCompatActivity {
                                 item_price_shield = get_int_from_server();
                                 item_price_attack = get_int_from_server();
                                 Max_shield = get_int_from_server();
-                                btn_buyShield.setText("실드 구매"+item_price_shield);
-                                btn_buyAttack.setText("공격"+item_price_attack);
+                                runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
+                                                  @Override
+                                                  public void run() {
+                                                      btn_buyShield.setText("실드 구매" + item_price_shield);
+                                                      btn_buyAttack.setText("공격" + item_price_attack);
+                                                  }});
                                 break;
                         }
 
@@ -681,7 +695,7 @@ public class MainActivity extends AppCompatActivity {
                             };
                         correct.start();
                         et_answer.setEnabled(false);
-                        et_answer.setHint("");
+                        et_answer.setHint("이미 정답을 맞췄습니다.");
                     }else{
                         Toast.makeText(getApplicationContext(),"틀렸습니다", Toast.LENGTH_LONG).show();
                         Thread fail = new Thread() {
