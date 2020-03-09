@@ -5,11 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.os.Vibrator;
-import android.util.Log;
-import android.util.Xml;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
@@ -20,22 +16,17 @@ import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.sql.Types.NULL;
 
 public class MainActivity extends AppCompatActivity {
     int version = 2;
@@ -47,12 +38,13 @@ public class MainActivity extends AppCompatActivity {
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
-    TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel;
+    TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel, tv_shield;
     Button btn_submit, btn_exit;
     EditText et_answer;
     ProgressBar pb_timer;
 
     String s = "";
+
 
     public int get_int_from_server(){
         byte[] temp_buf = new byte[4];
@@ -346,12 +338,12 @@ public class MainActivity extends AppCompatActivity {
     int my_shield = 0; //내 실드 아이템의 개수. 3개가 최대.
     boolean is_my_shield_arrived = false;
     public synchronized void do_this_when_my_shield_arrived(){
+        tv_shield.setText("실드 :" + my_shield + "/" + Max_shield);
         is_my_shield_arrived = false;
     }
 
-    public synchronized void buy_item(int item_code, int user_number){
+    public synchronized void buy_item(final int item_code, int user_number){
         //이 함수 내부는 수정하지 말고, 함수 자체를 이용만 해주세요.
-        //당연히 서버로 구매 신호를 보내는 거기 때문에, 이 함수는 메인 스레드에서 실행하면 안된다.
         //코인이 부족하거나, 이미 접속이 끊어진 유저에게 공격을 보낸다던가 하는 경우에는 아무런 동작도 하지 않는다. 오류는 안나니 걱정 하지 마세요. 그냥 아무런 동작도 안함.
 
         /*
@@ -359,14 +351,27 @@ public class MainActivity extends AppCompatActivity {
         0: 공격하기 20코인 :usernumber를 공격한다.
         1: 실드 구매 30코인
          */
-        switch (item_code){
-            case 0://공격하기
-                send_signal(4);
-                write_to_server(user_number);
-                break;
-            case 1://실드 구매
-                send_signal(5);
-                break;
+        final int _item_code = item_code;
+        final int _user_number = user_number;
+        Thread buy_item = new Thread(){
+
+            public void run(){
+                switch (_item_code){
+                    case 0://공격하기
+                        send_signal(4);
+                        write_to_server(_user_number);
+                        break;
+                    case 1://실드 구매
+                        send_signal(5);
+                        break;
+                }
+            }
+        };
+    buy_item.start();
+        try {
+            buy_item.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -374,6 +379,21 @@ public class MainActivity extends AppCompatActivity {
 
     }
     public void buy_shield(View v){
+        if(coin.mine() > item_price_shield && my_shield < Max_shield){
+            buy_item(1,NULL);
+            MainActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(MainActivity.this, "실드를 구매하였습니다.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        else{
+            MainActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(MainActivity.this, "코인이 부족하거나, 이미 최대 개수를 보유 중입니다.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
 
     }
     @Override
@@ -392,6 +412,7 @@ public class MainActivity extends AppCompatActivity {
         tv_rank1 = (TextView)findViewById(R.id.rank1);
         tv_quizlevel = (TextView)findViewById(R.id.quiz_level);
         pb_timer = (ProgressBar)findViewById(R.id.timer);
+        tv_shield = (TextView)findViewById(R.id.my_shield);
 
         Thread worker = new Thread() {
              public void run() {
@@ -465,6 +486,7 @@ public class MainActivity extends AppCompatActivity {
                                 //서버로 부터 자신의 실드 아이템 개수 정보가 도착한 경우
                                 my_shield = get_int_from_server();
                                 is_my_shield_arrived = true;
+                                do_this_when_my_shield_arrived();
                                 break;
                             case 6:
                                 item_price_shield = get_int_from_server();
