@@ -25,10 +25,12 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import static java.sql.Types.NULL;
 
 public class MainActivity extends AppCompatActivity {
+    public Random rand = new Random();
     int version = 2;
     int port;
     long mytime;
@@ -38,8 +40,8 @@ public class MainActivity extends AppCompatActivity {
     private BufferedInputStream socket_in;
     private BufferedOutputStream socket_out;
     byte[] buf;
-    TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel, tv_shield;
-    Button btn_submit, btn_exit;
+    TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel, tv_shield,tv_board;
+    Button btn_submit, btn_exit, btn_buyShield, btn_buyAttack;
     EditText et_answer;
     ProgressBar pb_timer;
 
@@ -323,13 +325,29 @@ public class MainActivity extends AppCompatActivity {
     int user_number = -1; // 자신의 유저번호
 
     int my_attack_success = 0; // 공격을 시도하기 전, 항상 이 변수를 0으로 맞춰놓는다. 이 변수가 1로 바뀌는 순간, 내 공격이 성공한 것이고, 2로 바뀌면 실패한 것이다. 그대로 0이면, 아직 내 공격에 대한 성공 여부가 서버로 부터 도착하지 않은 것이다.
-    public synchronized void do_this_when_attacked(int attacked_by, boolean attack_success){
+    public synchronized void do_this_when_attacked(final int attacked_by, boolean attack_success){
         //attacked_by에는 자신을 공격한 유저의 유저번호가 담겨있다.
+        final String temp =  other_nicknames.data[attacked_by] + "(코인:"+coin.data[attacked_by]+")";
         if(attack_success == true){
             //상대의 공격이 성공한 경우
+
+            MainActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(MainActivity.this, temp+"님에게 공격당했습니다.", Toast.LENGTH_SHORT).show();
+                }
+            });
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(1000);
         }
         else if(attack_success == false){
             //상대의 공격이 실패한 경우 (실드에 막힘). 실드의 소모는 서버에서 자동으로 이미 처리 됨.
+            MainActivity.this.runOnUiThread(new Runnable() {
+                public void run() {
+                    Toast.makeText(MainActivity.this, temp+"님의 공격을 방어하였습니다.", Toast.LENGTH_SHORT).show();
+                }
+            });
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(500);
         }
 
         //공격의 경우에는 false로 만들어줄 arrived변수는 없음.
@@ -376,7 +394,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void buy_attack(View v){
-
+        tv_board.setText("");
+        if(coin.mine() > item_price_attack){
+            List<Integer> attack_list = new ArrayList<Integer>();
+            for(int i = 0 ; i < coin.length; ++i){
+                if(coin.data[i] > coin.mine()){
+                    attack_list.add(i);
+                }
+            }
+            if(attack_list.isEmpty()){
+                runOnUiThread(new Runnable() {//quiz_time변수에 변동이 있을 경우만 프로그레스 바를 set 해준다. 이 조건문 안에서 실행하면 더 효율적이다.
+                    @Override
+                    public void run() {
+                tv_board.setText(tv_board.getText()+"공격할 대상이 없습니다. 자신보다 코인을 많이 가진 유저만 공격할 수 있습니다.\n");
+                    }
+                });
+                return;
+            }
+            final int obj = attack_list.get(rand.nextInt(attack_list.size()));
+            runOnUiThread(new Runnable() {//quiz_time변수에 변동이 있을 경우만 프로그레스 바를 set 해준다. 이 조건문 안에서 실행하면 더 효율적이다.
+                @Override
+                public void run() {
+            tv_board.setText(tv_board.getText()+other_nicknames.data[obj]+"(코인:"+Integer.toString(coin.data[obj])+")님에게 공격 시도\n");
+                }
+            });
+            buy_item(0,obj);
+            return;
+        }
     }
     public void buy_shield(View v){
         if(coin.mine() > item_price_shield && my_shield < Max_shield){
@@ -404,15 +448,19 @@ public class MainActivity extends AppCompatActivity {
         port = Integer.valueOf(getIntent().getExtras().getString("port"));//LoginActivity에서 받아온 포트번호 정보를 저장한다.
 
         tv_question = (TextView)findViewById(R.id.question);
-        btn_submit = (Button)findViewById(R.id.submit);
-        et_answer = (EditText)findViewById(R.id.answer);
         tv_info = (TextView)findViewById(R.id.info);
-        btn_exit = (Button)findViewById(R.id.exit);
         tv_ccu = (TextView)findViewById(R.id.ccu);
         tv_rank1 = (TextView)findViewById(R.id.rank1);
-        tv_quizlevel = (TextView)findViewById(R.id.quiz_level);
-        pb_timer = (ProgressBar)findViewById(R.id.timer);
         tv_shield = (TextView)findViewById(R.id.my_shield);
+        tv_quizlevel = (TextView)findViewById(R.id.quiz_level);
+        tv_board = (TextView)findViewById(R.id.board);
+        btn_submit = (Button)findViewById(R.id.submit);
+        btn_buyShield = (Button)findViewById(R.id.buy_shield);
+        btn_buyAttack = (Button)findViewById(R.id.buy_attack);
+        btn_exit = (Button)findViewById(R.id.exit);
+        et_answer = (EditText)findViewById(R.id.answer);
+        pb_timer = (ProgressBar)findViewById(R.id.timer);
+
 
         Thread worker = new Thread() {
              public void run() {
@@ -463,10 +511,16 @@ public class MainActivity extends AppCompatActivity {
                                 switch(get_int_from_server()){
                                     case 0:
                                         //내 공격이 성공한 경우
+                                        MainActivity.this.runOnUiThread(new Runnable() {
+                                                                            public void run() {  tv_board.setText(tv_board.getText() + "나의 공격 성공!\n");          }
+                                                                        });
                                         my_attack_success = 1;
                                         break;
                                     case 1:
                                         //내 공격이 실패한 경우
+                                        MainActivity.this.runOnUiThread(new Runnable() {
+                                                                            public void run() {  tv_board.setText(tv_board.getText()+"상대의 방어 성공!\n");    }
+                                        });
                                         my_attack_success = 2;
                                         break;
                                     case 2:
@@ -492,6 +546,8 @@ public class MainActivity extends AppCompatActivity {
                                 item_price_shield = get_int_from_server();
                                 item_price_attack = get_int_from_server();
                                 Max_shield = get_int_from_server();
+                                btn_buyShield.setText("실드 구매"+item_price_shield);
+                                btn_buyAttack.setText("공격"+item_price_attack);
                                 break;
                         }
 
@@ -617,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
                     if(Integer.parseInt(ans) == quiz.answer()){
                         Toast.makeText(getApplicationContext(),"정답입니다", Toast.LENGTH_LONG).show();
                         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                        vibrator.vibrate(1000);
+                        vibrator.vibrate(200);
                         Thread correct = new Thread() {
                             public void run() {
                                 answer_to_server(true);
