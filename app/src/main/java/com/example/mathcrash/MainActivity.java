@@ -95,7 +95,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return result;
     }
-
     public void send_signal(int singal){//서버에 시그널을 보낸다.
         write_to_server(singal);
     }
@@ -153,8 +152,9 @@ public class MainActivity extends AppCompatActivity {
             else return -1;
         }
     }
-    //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
+
+    //아래 변수들은 실시간으로 계속 자동으로 서버로 부터 가져오게 구현했으므로 마음대로 사용하시오
 
     public class Quiz{
         boolean is_arrived = false;
@@ -205,9 +205,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-
-
     class Coin{
         boolean is_arrived = false;
         private boolean n_online_checked = false;
@@ -269,17 +266,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-    public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
-        if(correct_or_not){
-            write_to_server(0);
-            write_to_server(0);
-        }
-        else{
-            write_to_server(0);
-            write_to_server(1);
-        }
-    }
-
     class NickName{
         boolean is_arrived = false;
         String[] data;
@@ -321,7 +307,23 @@ public class MainActivity extends AppCompatActivity {
             is_arrived = false;
         }
     }
+    public void answer_to_server(boolean correct_or_not){//서버에 문제를 맞추었는지 아닌지 여부를 전송한다. true일 경우 정답. false일 경우 오답.
+        if(correct_or_not){
+            write_to_server(0);
+            write_to_server(0);
+        }
+        else{
+            write_to_server(0);
+            write_to_server(1);
+        }
+    }
 
+    //상수값들//
+    public int item_price_shield = Integer.MAX_VALUE;
+    public int item_price_attack = Integer.MAX_VALUE;
+    public int Max_shield = 0;
+
+    ///////////
     Quiz quiz = new Quiz();
     Coin coin = new Coin();
     NickName other_nicknames = new NickName();
@@ -366,6 +368,13 @@ public class MainActivity extends AppCompatActivity {
                 send_signal(5);
                 break;
         }
+    }
+
+    public void buy_attack(View v){
+
+    }
+    public void buy_shield(View v){
+
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -456,6 +465,11 @@ public class MainActivity extends AppCompatActivity {
                                 //서버로 부터 자신의 실드 아이템 개수 정보가 도착한 경우
                                 my_shield = get_int_from_server();
                                 is_my_shield_arrived = true;
+                                break;
+                            case 6:
+                                item_price_shield = get_int_from_server();
+                                item_price_attack = get_int_from_server();
+                                Max_shield = get_int_from_server();
                                 break;
                         }
 
