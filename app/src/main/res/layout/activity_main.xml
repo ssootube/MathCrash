@@ -78,9 +78,9 @@
 
             <Button
                 android:id="@+id/submit"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="전송" />
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:background="@drawable/submit" />
         </LinearLayout>
 
 
