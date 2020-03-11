@@ -33,6 +33,9 @@ public class InfoActivity extends AppCompatActivity {
         ///////////
         add("google","https://www.flaticon.com/authors/google",true);
         add("Pixel perfect","https://www.flaticon.com/authors/pixel-perfect",false);
+        add("Freepik","https://www.flaticon.com/authors/freepik",false);
+        add("DinosoftLabs","https://www.flaticon.com/authors/dinosoftlabs",false);
+        add("Smashicons","https://www.flaticon.com/authors/smashicons",false);
         ///////////
 
 

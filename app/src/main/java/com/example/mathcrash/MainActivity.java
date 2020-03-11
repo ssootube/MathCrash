@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,8 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private BufferedOutputStream socket_out;
     byte[] buf;
     TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel, tv_shield,tv_board;
-    Button btn_exit, btn_buyShield, btn_buyAttack;
-    ImageButton btn_submit;
+    Button btn_buyShield, btn_buyAttack;
+    ImageButton btn_exit, btn_submit;
+    ImageView im_level,im_shield_count;
     EditText et_answer;
     ProgressBar pb_timer;
 
@@ -172,11 +174,15 @@ public class MainActivity extends AppCompatActivity {
                     et_answer.setEnabled(true);
                     et_answer.setHint("정답을 입력하세요");
                     for(int i=0; i<length-1;i++){
-                        s+= String.valueOf(data[i]) +"→";
+                        s+= String.valueOf(data[i]) +" →";
                     }
                     s+= "?";
                     tv_question.setText(s);
                     tv_quizlevel.setText("난이도:"+Integer.toString(level));
+                    if(level < 5) im_level.setBackgroundResource(R.drawable.study);
+                    else if(level<10) im_level.setBackgroundResource(R.drawable.study_1);
+                    else if(level<15) im_level.setBackgroundResource(R.drawable.study_2);
+                    else if(level<20) im_level.setBackgroundResource(R.drawable.study_3);
                     pb_timer.setMax(time_limit);
                     s="";
                 }
@@ -367,6 +373,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 tv_shield.setText("실드 :" + my_shield + "/" + Max_shield);
+                if(my_shield >0) im_shield_count.setBackgroundResource(R.drawable.shield1);
+                else  im_shield_count.setBackgroundResource(R.drawable.shield);
             }});
         is_my_shield_arrived = false;
     }
@@ -472,10 +480,12 @@ public class MainActivity extends AppCompatActivity {
         btn_submit = (ImageButton)findViewById(R.id.submit);
         btn_buyShield = (Button)findViewById(R.id.buy_shield);
         btn_buyAttack = (Button)findViewById(R.id.buy_attack);
-        btn_exit = (Button)findViewById(R.id.exit);
+        btn_exit = (ImageButton)findViewById(R.id.exit);
         et_answer = (EditText)findViewById(R.id.answer);
         pb_timer = (ProgressBar)findViewById(R.id.timer);
         vibrator  = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        im_level = (ImageView)findViewById(R.id.level);
+        im_shield_count = (ImageView)findViewById(R.id.shield_count);
 
         et_answer.addTextChangedListener(new TextWatcher() {
             @Override

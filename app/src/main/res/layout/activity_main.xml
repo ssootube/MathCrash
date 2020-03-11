@@ -13,19 +13,36 @@
         android:layout_marginTop="10dp"
         android:layout_marginRight="10dp"
         android:orientation="vertical">
-
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+        <ImageButton
+            android:id="@+id/exit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/exit"
+            />
         <TextView
             android:id="@+id/textView1"
             android:layout_width="match_parent"
             android:layout_height="57dp"
-            android:gravity="center"
+            android:gravity="center_vertical"
             android:paddingRight="5dp"
-            android:text="수열 추리 문제"
+            android:text="          수열 추리 문제"
             android:textSize="18dp" />
+        </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/level"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:background="@drawable/study"
+            />
         <TextView
             android:id="@+id/quiz_level"
             android:layout_width="0dp"
@@ -34,10 +51,14 @@
             android:gravity="left"
             android:text=""
             android:textSize="15dp" />
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:background="@drawable/coin"
+            />
         <TextView
             android:id="@+id/info"
-            android:layout_width="0dp"
-            android:layout_weight="1"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="right"
             android:text=""
@@ -50,7 +71,10 @@
             android:layout_width="match_parent"
             android:layout_height="88dp"
             android:layout_marginLeft="10dp"
+            android:background= "#006400"
+            android:textColor="#FFFFFF"
             android:text=""
+            android:textStyle="bold"
             android:textSize="30dp" />
 
         <ProgressBar
@@ -114,11 +138,7 @@
                     android:layout_height="wrap_content"
                     android:background="@drawable/border"
                     android:text="" />
-                <Button
-                    android:id="@+id/exit"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="종료" />
+
 
             </LinearLayout>
 
@@ -128,12 +148,24 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/my_shield"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="20dp"
-                    android:text="실드" />
+                    android:orientation="horizontal">
+                    <ImageView
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:background="@drawable/shield"
+                        android:id="@+id/shield_count"
+                        />
+                    <TextView
+                        android:id="@+id/my_shield"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="20dp"
+                        android:text="실드" />
+                </LinearLayout>
+
 
                 <Button
                     android:id="@+id/buy_shield"
