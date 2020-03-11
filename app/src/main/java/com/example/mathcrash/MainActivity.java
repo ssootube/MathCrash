@@ -610,25 +610,7 @@ public class MainActivity extends AppCompatActivity {
                                 break;
                         }
 
-                        btn_exit.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                try {
-                                    socket.close();
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-                                            startActivity(intent);
-                                            finish();
-                                        }
-                                    });
 
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
 
                     }
                     MainActivity.this.runOnUiThread(new Runnable() {
@@ -757,8 +739,46 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btn_exit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+              onBackPressed();
+            }
+        });
 
 
 
     }
+    @Override
+    public void onBackPressed() {
+        Intent intent = new Intent(this, PopUpActivity.class);
+        intent.putExtra("str", "정말로 종료합니까?");
+        startActivityForResult(intent, 1);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode==1){
+            if(resultCode==RESULT_OK){
+                try {
+                    socket.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                            startActivity(intent);
+                            finish();
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if(resultCode==RESULT_CANCELED){
+                //취소
+            }
+        }
+    }
+
+
 }

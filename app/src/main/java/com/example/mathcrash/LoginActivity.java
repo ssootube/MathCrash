@@ -1,6 +1,7 @@
 package com.example.mathcrash;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import android.content.Context;
 import android.content.Intent;
@@ -58,6 +59,11 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         }
+    }
+    @Override
+    public void onBackPressed() {
+        ActivityCompat.finishAffinity(this);
+        System.exit(0);
     }
     public void info(View v) {
         vibrator.vibrate(5);
