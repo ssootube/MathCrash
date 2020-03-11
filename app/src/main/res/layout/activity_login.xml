@@ -30,21 +30,36 @@
         android:text="닉네임을 입력하세요"
         android:textSize="20dp" />
 
-    <EditText
-        android:id="@+id/edt_nickname"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="닉네임"
-        android:inputType="textPersonName"
-        android:maxLength="10"
-        android:textSize="20dp" />
+        android:orientation="horizontal"
+        >
+        <EditText
+            android:id="@+id/edt_nickname"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:hint="닉네임"
+            android:inputType="textPersonName"
+            android:maxLength="10"
+            android:textSize="20dp" />
+        <ImageButton
+            android:id="@+id/btn_login"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:onClick="login"
+            android:background="@drawable/login" />
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/btn_login"
+
+
+
+    <ImageButton
+        android:id="@+id/btn_info"
+        android:background="@drawable/info"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="login"
-        android:text="접속하기"
-        android:textSize="40dp" />
+        android:onClick="info"/>
 
 </LinearLayout>

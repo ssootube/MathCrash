@@ -4,12 +4,16 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,9 +45,12 @@ public class MainActivity extends AppCompatActivity {
     private BufferedOutputStream socket_out;
     byte[] buf;
     TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel, tv_shield,tv_board;
-    Button btn_submit, btn_exit, btn_buyShield, btn_buyAttack;
+    Button btn_exit, btn_buyShield, btn_buyAttack;
+    ImageButton btn_submit;
     EditText et_answer;
     ProgressBar pb_timer;
+
+    Vibrator vibrator;
 
     String s = "";
 
@@ -337,7 +344,7 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, temp+"님에게 공격당했습니다.", Toast.LENGTH_SHORT).show();
                 }
             });
-            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
             vibrator.vibrate(1000);
         }
         else if(attack_success == false){
@@ -347,7 +354,6 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(MainActivity.this, temp+"님의 공격을 방어하였습니다.", Toast.LENGTH_SHORT).show();
                 }
             });
-            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             vibrator.vibrate(500);
         }
 
@@ -463,12 +469,41 @@ public class MainActivity extends AppCompatActivity {
         tv_shield = (TextView)findViewById(R.id.my_shield);
         tv_quizlevel = (TextView)findViewById(R.id.quiz_level);
         tv_board = (TextView)findViewById(R.id.board);
-        btn_submit = (Button)findViewById(R.id.submit);
+        btn_submit = (ImageButton)findViewById(R.id.submit);
         btn_buyShield = (Button)findViewById(R.id.buy_shield);
         btn_buyAttack = (Button)findViewById(R.id.buy_attack);
         btn_exit = (Button)findViewById(R.id.exit);
         et_answer = (EditText)findViewById(R.id.answer);
         pb_timer = (ProgressBar)findViewById(R.id.timer);
+        vibrator  = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+        et_answer.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if(et_answer.getText().toString().getBytes().length <= 0) btn_submit.setBackgroundResource(R.drawable.send);
+                else btn_submit.setBackgroundResource(R.drawable.send1);
+            }
+            @Override
+            public void afterTextChanged(Editable arg0) {
+
+            }
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+        });//입력시 전송 버튼 모양이 바뀐다.
+        et_answer.setOnKeyListener(new View.OnKeyListener(){
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent){
+                switch (i){
+                    case KeyEvent.KEYCODE_ENTER:
+                        btn_submit.performClick();
+                        return true;
+                }
+                return false;
+            }
+        });
+
 
 
         Thread worker = new Thread() {
@@ -686,7 +721,6 @@ public class MainActivity extends AppCompatActivity {
 
                     if(Integer.parseInt(ans) == quiz.answer()){
                         Toast.makeText(getApplicationContext(),"정답입니다", Toast.LENGTH_LONG).show();
-                        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                         vibrator.vibrate(200);
                         Thread correct = new Thread() {
                             public void run() {
@@ -713,17 +747,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        et_answer.setOnKeyListener(new View.OnKeyListener(){
-            @Override
-            public boolean onKey(View view, int i, KeyEvent keyEvent){
-                switch (i){
-                    case KeyEvent.KEYCODE_ENTER:
-                        btn_submit.performClick();
-                        return true;
-                }
-                return false;
-            }
-        });
+
 
 
     }
