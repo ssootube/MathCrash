@@ -44,7 +44,7 @@ public class InfoActivity extends AppCompatActivity {
             Linkify.addLinks(information, pattern,list.get(i).second,null,my_filter);
         }
         Pattern pattern1 = Pattern.compile("www.flaticon.com");
-        Linkify.addLinks(information, pattern1,"www.flaticon.com",null,my_filter);
+        Linkify.addLinks(information, pattern1,"https://www.flaticon.com",null,my_filter);
         Pattern pattern2 = Pattern.compile("CC BY 3.0");
         Linkify.addLinks(information, pattern2,"https://creativecommons.org/licenses/by/3.0/",null,my_filter);
     }
