@@ -36,7 +36,7 @@ import static java.sql.Types.NULL;
 
 public class MainActivity extends AppCompatActivity {
     public Random rand = new Random();
-    int version = 3;
+    int version = 4;
     int port;
     long mytime;
     String nickname;
