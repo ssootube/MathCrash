@@ -4,17 +4,18 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,10 +37,10 @@ import static java.sql.Types.NULL;
 
 public class MainActivity extends AppCompatActivity {
     public Random rand = new Random();
-    int version = 5;
+    int version = 6;
     int port;
     long mytime;
-    String nickname;
+    String my_nickname;
     private Socket socket;
     String serverIP = "49.50.162.149";
     private BufferedInputStream socket_in;
@@ -47,12 +48,15 @@ public class MainActivity extends AppCompatActivity {
     byte[] buf;
     TextView tv_question, tv_info, tv_ccu, tv_rank1,tv_quizlevel, tv_shield,tv_board;
     Button btn_buyShield, btn_buyAttack;
-    ImageButton btn_exit, btn_submit;
+    ImageButton btn_exit, btn_submit, btn_send_chat;
     ImageView im_level,im_shield_count;
-    EditText et_answer;
+    EditText et_answer, et_chat_input;
     ProgressBar pb_timer;
 
     Vibrator vibrator;
+
+    static ArrayList<String> chat_data = new ArrayList<String>();
+    static ArrayAdapter chat_adapter;
 
     String s = "";
 
@@ -129,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             int size = get_int_from_server();
             if(size != 0){
+                System.out.println("길이 테스트:"+size);
                 byte[] temp_buf = new byte[size];
                 socket_in.read(temp_buf, 0, size);
                result= new String(temp_buf,"UTF-8");
@@ -251,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
                 @Override
                 public void run() {
-                    tv_info.setText(nickname +"님의 COIN "+ coin.mine() +"개");
+                    tv_info.setText(my_nickname +"님의 COIN "+ coin.mine() +"개");
                     String ranking ="";
                     List<Pair> rank = new ArrayList<>();
                     for(int i=0; i<length;i++){
@@ -412,6 +417,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //onClicks
     public void buy_attack(View v){
         runOnUiThread(new Runnable() {//랭킹은 코인 수에 따라 바뀌므로, 코인이 도착했을 때 뿌려주는 게 맞다.
             @Override
@@ -463,11 +469,29 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+    public void send_chat(View v){
+        String temp_message = String.valueOf(et_chat_input.getText());
+        if(temp_message.equals("")){//아무것도 입력하지 않은 경우
+            return;
+        }
+        final String message = my_nickname+":"+temp_message;
+        Thread sending_message = new Thread(){
+            public void run(){
+                write_to_server(message);
+            }
+        };
+       sending_message.start();
+        MainActivity.this.runOnUiThread(new Runnable() {
+            public void run() {
+                et_chat_input.setText("");}
+        });
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        nickname = getIntent().getExtras().getString("nickname");//LoginActivity에서 받아온 닉네임 정보를 저장한다.
+        my_nickname = getIntent().getExtras().getString("nickname");//LoginActivity에서 받아온 닉네임 정보를 저장한다.
         port = Integer.valueOf(getIntent().getExtras().getString("port"));//LoginActivity에서 받아온 포트번호 정보를 저장한다.
 
         tv_question = (TextView)findViewById(R.id.question);
@@ -478,10 +502,13 @@ public class MainActivity extends AppCompatActivity {
         tv_quizlevel = (TextView)findViewById(R.id.quiz_level);
         tv_board = (TextView)findViewById(R.id.board);
         btn_submit = (ImageButton)findViewById(R.id.submit);
+        btn_exit = (ImageButton)findViewById(R.id.exit);
+        btn_send_chat = (ImageButton)findViewById(R.id.send_chat);
         btn_buyShield = (Button)findViewById(R.id.buy_shield);
         btn_buyAttack = (Button)findViewById(R.id.buy_attack);
-        btn_exit = (ImageButton)findViewById(R.id.exit);
+
         et_answer = (EditText)findViewById(R.id.answer);
+        et_chat_input = (EditText)findViewById(R.id.chat_input);
         pb_timer = (ProgressBar)findViewById(R.id.timer);
         vibrator  = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         im_level = (ImageView)findViewById(R.id.level);
@@ -504,7 +531,7 @@ public class MainActivity extends AppCompatActivity {
         });//입력시 전송 버튼 모양이 바뀐다.
         et_answer.setOnKeyListener(new View.OnKeyListener(){
             @Override
-            public boolean onKey(View view, int i, KeyEvent keyEvent){
+            public boolean onKey(View view, int i, KeyEvent keyEvent){//키패드에서 엔터시 할 것
                 switch (i){
                     case KeyEvent.KEYCODE_ENTER:
                         btn_submit.performClick();
@@ -513,8 +540,38 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+        et_chat_input.setOnKeyListener(new View.OnKeyListener(){
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent){//키패드에서 엔터시 할 것
+                switch (i){
+                    case KeyEvent.KEYCODE_ENTER:
+                        btn_send_chat.performClick();
+                        return true;
+                }
+                return false;
+            }
+        });
+        et_chat_input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if(et_chat_input.getText().toString().getBytes().length <= 0) btn_send_chat.setBackgroundResource(R.drawable.send);
+                else btn_send_chat.setBackgroundResource(R.drawable.send1);
+            }
+            @Override
+            public void afterTextChanged(Editable arg0) {
+
+            }
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+        });//입력시 전송 버튼 모양이 바뀐다.
 
 
+
+        chat_adapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, chat_data) ;
+        final ListView lv_chatList = (ListView) findViewById(R.id.chat_list) ;
+        lv_chatList.setAdapter(chat_adapter) ;
 
         Thread worker = new Thread() {
              public void run() {
@@ -541,7 +598,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     //서버에 닉네임을 전송합니다.
-                    write_to_server(nickname);
+                    write_to_server(my_nickname);
 
                     //유저번호를 받아옵니다.
                     user_number = get_int_from_server();
@@ -550,13 +607,18 @@ public class MainActivity extends AppCompatActivity {
                     while(socket.isConnected()) {
                         switch (get_int_from_server()) {
                             case 0://서버로 부터 수열 추리 문제가 도착한 경우
-                                System.out.println(nickname);
+                                System.out.println(my_nickname);
                                 quiz.update();
                                 break;
                             case 1://서버로 부터 coin정보 데이터가 도착한 경우
                                 coin.update();
                                 break;
                             case 2:
+                                chat_data.add(get_string_from_server());
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    public void run() {    chat_adapter.notifyDataSetChanged();}
+                                });
+
                                 break;
                             case 3://서버로 부터 닉네임 정보 데이터가 도착한 경우
                                 other_nicknames.update();
